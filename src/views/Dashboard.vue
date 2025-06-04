@@ -465,42 +465,23 @@ const getInitials = (name) => {
 }
 
 .main-content {
-  margin-left: 280px;
+  margin-left: 180px;
   padding: 1rem;
-  transition: margin-left 0.3s ease;
+  transition: all 0.3s ease;
   background-color: #1e1e1e;
   min-height: 100vh;
-}
-
-.main-content.lg\:ml-\[80px\] {
-  margin-left: 80px; /* Ancho del sidebar colapsado */
-}
-
-@media (max-width: 1024px) {
-  .main-content {
-    margin-left: 0;
-    padding-top: 4rem; /* Espacio para el botón de menú móvil */
-  }
-}
-
-.welcome-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.welcome-subtitle {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.875rem;
+  max-width: 1800px;
+  margin-right: -7rem;
+  margin-left: auto;
+  width: calc(98% - 80px);
 }
 
 .dashboard-header {
   background-color: #2a2a2a;
   border: 1px solid rgba(146, 208, 0, 0.1);
   padding: 1.5rem 2rem;
-  margin-bottom: 1rem;
-  border-radius: 0.75rem;
-  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 1rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
@@ -526,21 +507,22 @@ const getInitials = (name) => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.5rem;
   background-color: #92d000;
   color: #ffffff;
   border: none;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
+  border-radius: 0.75rem;
+  font-weight: 500;
   transition: all 0.2s ease;
 }
 
 .refresh-btn:hover {
   background-color: #7eb300;
+  transform: translateY(-1px);
 }
 
 .refresh-btn.small {
-  padding: 0.375rem 0.75rem;
+  padding: 0.5rem 1rem;
   font-size: 0.75rem;
 }
 
@@ -551,7 +533,7 @@ const getInitials = (name) => {
 }
 
 .user-name {
-  font-size: 0.875rem;
+  font-size: rem;
   color: #4B5563;
 }
 
@@ -569,23 +551,21 @@ const getInitials = (name) => {
 }
 
 .dashboard-main {
-  padding: 1.5rem 2rem;
+  padding: 0.5rem;
   max-width: 100%;
   margin: 0 auto;
 }
 
 /* Secciones */
 .section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 .section-title {
-  font-size: 1.25rem;
+  color: #ffffff;
+  font-size: 1.5rem;
   font-weight: 600;
-  color: #111827;
+  letter-spacing: -0.025em;
 }
 
 .time-filter {
@@ -614,7 +594,8 @@ const getInitials = (name) => {
 .kpis-grid {
   display: grid;
   grid-template-columns: repeat(1, 1fr);
-  gap: 1.5rem;
+  grid-gap: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 @media (min-width: 640px) {
@@ -632,15 +613,15 @@ const getInitials = (name) => {
 .kpi-card {
   background-color: #2a2a2a;
   border: 1px solid rgba(146, 208, 0, 0.1);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  border-radius: 0.75rem;
+  border-radius: 1rem;
   padding: 1.5rem;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .kpi-card:hover {
-  box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  border-color: rgba(146, 208, 0, 0.3);
 }
 
 .kpi-header {
@@ -703,7 +684,7 @@ const getInitials = (name) => {
 .charts-section {
   display: grid;
   grid-template-columns: repeat(1, 1fr);
-  gap: 1.5rem;
+  gap: 2rem;
   margin-bottom: 2rem;
 }
 
@@ -716,14 +697,15 @@ const getInitials = (name) => {
 .chart-card {
   background-color: #2a2a2a;
   border: 1px solid rgba(146, 208, 0, 0.1);
-  border-radius: 0.75rem;
+  border-radius: 1rem;
   padding: 1.5rem;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .chart-card:hover {
-  box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  border-color: rgba(146, 208, 0, 0.3);
 }
 
 .chart-header {
@@ -765,14 +747,14 @@ const getInitials = (name) => {
 }
 
 .chart-container {
-  height: 250px;
+  height: 300px; /* Más alto para mejor visualización */
 }
 
 /* Data Section */
 .data-section {
   display: grid;
   grid-template-columns: repeat(1, 1fr);
-  gap: 1.5rem;
+  gap: 2rem;
 }
 
 @media (min-width: 1024px) {
@@ -784,14 +766,15 @@ const getInitials = (name) => {
 .data-card {
   background-color: #2a2a2a;
   border: 1px solid rgba(146, 208, 0, 0.1);
-  border-radius: 0.75rem;
+  border-radius: 1rem;
   padding: 1.5rem;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .data-card:hover {
-  box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  border-color: rgba(146, 208, 0, 0.3);
 }
 
 .data-header {
@@ -809,82 +792,28 @@ const getInitials = (name) => {
 
 /* SEO Table */
 .seo-table {
-  overflow-x: auto;
+  border-radius: 0.75rem;
+  overflow: hidden;
 }
 
 .seo-table table {
+  border-spacing: 0;
   width: 100%;
-  border-collapse: collapse;
 }
 
 .seo-table th {
-  background-color: #2a2a2a;
-  color: rgba(255, 255, 255, 0.7);
-  border-bottom: 1px solid rgba(146, 208, 0, 0.1);
-  text-align: left;
-  padding: 0.75rem 1rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  background-color: rgba(146, 208, 0, 0.1);
+  color: #ffffff;
+  font-weight: 600;
+  padding: 1rem 1.5rem;
 }
 
 .seo-table td {
-  padding: 1rem;
-  font-size: 0.875rem;
-  color: #ffffff;
-  border-bottom: 1px solid rgba(146, 208, 0, 0.1);
+  padding: 1rem 1.5rem;
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.seo-table tr:last-child td {
-  border-bottom: none;
-}
-
-.position-badge {
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  font-size: 0.75rem;
-}
-
-.position-badge.excellent {
-  background-color: rgba(146, 208, 0, 0.2);
-  color: #92d000;
-}
-
-.position-badge.good {
-  background-color: #D1FAE5;
-  color: #047857;
-}
-
-.position-badge.average {
-  background-color: #FEF3C7;
-  color: #B45309;
-}
-
-.position-badge.poor {
-  background-color: rgba(254, 117, 41, 0.2);
-  color: #fe7529;
-}
-
-.change-indicator {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.change-indicator.positive {
-  color: #10B981;
-}
-
-.change-indicator.negative {
-  color: #EF4444;
-}
-
-/* Campaigns List */
+/* Mejoras en las campañas */
 .campaigns-list {
   display: flex;
   flex-direction: column;
@@ -892,10 +821,16 @@ const getInitials = (name) => {
 }
 
 .campaign-item {
-  padding: 1rem;
-  border-radius: 0.5rem;
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(146, 208, 0, 0.1);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  transition: all 0.2s ease;
+}
+
+.campaign-item:hover {
   background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-color: rgba(146, 208, 0, 0.3);
 }
 
 .campaign-info {
