@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard-layout">
     <SidebarMenu />
-
+    
     <div 
       class="main-content"
       :class="{
@@ -9,148 +9,204 @@
         'lg:ml-[80px]': isSidebarCollapsed
       }"
     >
-      <main class="dashboard-content px-4 pt-20 md:px-8 bg-gray-50">
-        <!-- Header con información general -->
-        <div class="mb-8">
-          <h1 class="text-2xl font-bold text-gray-900 mb-1">Dashboard</h1>
-          <p class="text-gray-600">Bienvenido, {{ clientName }}</p>
-        </div>
-
-        <!-- KPIs Principales -->
-        <div class="grid gap-6 mb-8 sm:grid-cols-2 lg:grid-cols-4">
-          <div v-for="kpi in kpis" :key="kpi.title" 
-            class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:border-[#92d000] transition-all duration-300">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-600 mb-1">{{ kpi.title }}</p>
-                <h3 class="text-2xl font-bold text-gray-900">{{ kpi.value }}</h3>
+      <header class="dashboard-header">
+        <div class="header-content">
+          <h1 class="dashboard-title">Dashboard</h1>
+          <div class="header-actions">
+            <button class="refresh-btn" @click="refreshData">
+              <RefreshCw class="h-4 w-4" />
+              <span>Actualizar datos</span>
+            </button>
+            <div class="user-profile">
+              <span class="user-name">{{ clientName }}</span>
+              <div class="avatar">
+                <span class="initials">{{ getInitials(clientName) }}</span>
               </div>
-              <div :class="'p-3 rounded-lg ' + kpi.bgColor">
-                <component :is="kpi.icon" class="w-6 h-6 text-white" />
-              </div>
-            </div>
-            <div class="mt-4 flex items-center">
-              <component 
-                :is="kpi.trend === 'up' ? ArrowUpIcon : ArrowDownIcon" 
-                class="w-4 h-4"
-                :class="kpi.trend === 'up' ? 'text-green-500' : 'text-red-500'"
-              />
-              <span 
-                class="ml-2 text-sm"
-                :class="kpi.trend === 'up' ? 'text-green-500' : 'text-red-500'"
-              >
-                {{ kpi.change }}
-              </span>
-              <span class="text-gray-600 text-sm ml-2">vs mes anterior</span>
             </div>
           </div>
         </div>
+      </header>
 
-        <!-- Gráficas y SEO -->
-        <div class="grid gap-6 mb-8 lg:grid-cols-2">
-          <!-- Gráfica de Visitas -->
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-semibold text-gray-900">Visitas al Sitio Web</h3>
-              <div class="flex items-center gap-2 text-sm text-gray-600">
-                <span class="font-medium text-[#92d000]">+15.8%</span>
-                <span>vs mes anterior</span>
+      <main class="dashboard-main">
+        <!-- Sección de KPIs -->
+        <section class="kpis-section">
+          <div class="section-header">
+            <h2 class="section-title">Resumen de rendimiento</h2>
+            <div class="time-filter">
+              <select v-model="timeRange" class="time-select">
+                <option value="7d">Últimos 7 días</option>
+                <option value="30d">Últimos 30 días</option>
+                <option value="90d">Últimos 90 días</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="kpis-grid">
+            <div v-for="kpi in kpis" :key="kpi.title" class="kpi-card">
+              <div class="kpi-header">
+                <div :class="['kpi-icon', kpi.bgColor]">
+                  <component :is="kpi.icon" class="h-5 w-5" />
+                </div>
+                <div class="kpi-trend" :class="kpi.trend === 'up' ? 'text-green-500' : 'text-red-500'">
+                  <component :is="kpi.trend === 'up' ? ArrowUpIcon : ArrowDownIcon" class="h-4 w-4" />
+                  <span>{{ kpi.change }}</span>
+                </div>
+              </div>
+              <div class="kpi-content">
+                <p class="kpi-title">{{ kpi.title }}</p>
+                <h3 class="kpi-value">{{ kpi.value }}</h3>
+              </div>
+              <div class="kpi-footer">
+                <div class="progress-bar">
+                  <div 
+                    class="progress-fill" 
+                    :class="kpi.trend === 'up' ? 'bg-green-500' : 'bg-red-500'"
+                    :style="{ width: kpi.progress + '%' }"
+                  ></div>
+                </div>
               </div>
             </div>
-            <div class="h-[200px]">
+          </div>
+        </section>
+
+        <!-- Sección de gráficas principales -->
+        <section class="charts-section">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Visitas al Sitio Web</h3>
+              <div class="chart-stats">
+                <span class="stat-value">24,589</span>
+                <span class="stat-change positive">+15.8%</span>
+              </div>
+            </div>
+            <div class="chart-container">
               <Line 
                 :data="visitChartData" 
                 :options="chartOptions"
               />
             </div>
           </div>
+          
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Conversiones</h3>
+              <div class="chart-stats">
+                <span class="stat-value">1,423</span>
+                <span class="stat-change positive">+23.1%</span>
+              </div>
+            </div>
+            <div class="chart-container">
+              <Bar 
+                :data="conversionChartData" 
+                :options="chartOptions"
+              />
+            </div>
+          </div>
+        </section>
 
-          <!-- Posicionamiento SEO -->
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <div class="flex justify-between items-center mb-6">
-              <h3 class="text-lg font-semibold text-gray-900">Posicionamiento SEO</h3>
+        <!-- Sección de datos SEO y Campañas -->
+        <section class="data-section">
+          <!-- Tabla de posicionamiento SEO -->
+          <div class="data-card">
+            <div class="data-header">
+              <h3 class="data-title">Posicionamiento SEO</h3>
               <button 
                 @click="refreshSEOData"
-                class="text-sm px-3 py-1 bg-[#92d000] text-white rounded-lg hover:bg-[#7ab000] transition-colors"
+                class="refresh-btn small"
               >
-                Actualizar datos
+                <RefreshCw class="h-3 w-3" />
+                <span>Actualizar</span>
               </button>
             </div>
-            
-            <div class="space-y-4">
-              <div v-for="keyword in seoKeywords" :key="keyword.term" 
-                class="p-4 rounded-lg border border-gray-100 hover:border-[#92d000] transition-all duration-300">
-                <div class="flex justify-between items-center">
-                  <div>
-                    <p class="font-medium text-gray-900">{{ keyword.term }}</p>
-                    <p class="text-sm text-gray-600">Última actualización: {{ keyword.lastUpdate }}</p>
-                  </div>
-                  <div class="text-center">
-                    <div 
-                      class="text-2xl font-bold"
-                      :class="{
-                        'text-green-500': keyword.position <= 10,
-                        'text-yellow-500': keyword.position > 10 && keyword.position <= 20,
-                        'text-red-500': keyword.position > 20
-                      }"
-                    >
-                      #{{ keyword.position }}
-                    </div>
-                    <p class="text-sm text-gray-600">Posición</p>
-                  </div>
-                </div>
-                <div class="mt-2 flex items-center">
-                  <component 
-                    :is="keyword.change > 0 ? ArrowUpIcon : ArrowDownIcon"
-                    class="w-4 h-4"
-                    :class="keyword.change > 0 ? 'text-green-500' : 'text-red-500'"
-                  />
-                  <span 
-                    class="ml-1 text-sm"
-                    :class="keyword.change > 0 ? 'text-green-500' : 'text-red-500'"
-                  >
-                    {{ Math.abs(keyword.change) }} posiciones
+            <div class="seo-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Palabra clave</th>
+                    <th>Posición</th>
+                    <th>Cambio</th>
+                    <th>Última actualización</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="keyword in seoKeywords" :key="keyword.term">
+                    <td>{{ keyword.term }}</td>
+                    <td>
+                      <span class="position-badge" :class="{
+                        'excellent': keyword.position <= 3,
+                        'good': keyword.position > 3 && keyword.position <= 10,
+                        'average': keyword.position > 10 && keyword.position <= 20,
+                        'poor': keyword.position > 20
+                      }">
+                        #{{ keyword.position }}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="change-indicator" :class="{
+                        'positive': keyword.change > 0,
+                        'negative': keyword.change < 0
+                      }">
+                        <component 
+                          :is="keyword.change > 0 ? ArrowUpIcon : ArrowDownIcon"
+                          class="h-3 w-3"
+                        />
+                        {{ Math.abs(keyword.change) }}
+                      </span>
+                    </td>
+                    <td>{{ keyword.lastUpdate }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <!-- Lista de campañas -->
+          <div class="data-card">
+            <div class="data-header">
+              <h3 class="data-title">Campañas Activas</h3>
+              <button class="refresh-btn small">
+                <RefreshCw class="h-3 w-3" />
+                <span>Actualizar</span>
+              </button>
+            </div>
+            <div class="campaigns-list">
+              <div v-for="campaign in campaigns" :key="campaign.id" class="campaign-item">
+                <div class="campaign-info">
+                  <h4 class="campaign-name">{{ campaign.name }}</h4>
+                  <span class="campaign-status" :class="{
+                    'active': campaign.status === 'Activa',
+                    'paused': campaign.status === 'En Pausa'
+                  }">
+                    {{ campaign.status }}
                   </span>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Campañas Activas -->
-        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-8">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Campañas Activas</h3>
-          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div v-for="campaign in campaigns" :key="campaign.id"
-              class="p-4 rounded-lg border border-gray-100 hover:border-[#92d000] transition-all duration-300">
-              <div class="flex items-center justify-between mb-2">
-                <h4 class="font-medium text-gray-900">{{ campaign.name }}</h4>
-                <span 
-                  class="px-2 py-1 text-xs rounded-full"
-                  :class="campaign.status === 'Activa' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'"
-                >
-                  {{ campaign.status }}
-                </span>
-              </div>
-              <div class="space-y-2">
-                <div class="flex justify-between text-sm">
-                  <span class="text-gray-600">Presupuesto:</span>
-                  <span class="font-medium text-gray-900">${{ campaign.budget }}</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                  <span class="text-gray-600">Gastado:</span>
-                  <span class="font-medium text-gray-900">${{ campaign.spent }}</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    class="bg-[#92d000] h-2 rounded-full"
-                    :style="{ width: (campaign.spent/campaign.budget * 100) + '%' }"
-                  ></div>
+                <div class="campaign-stats">
+                  <div class="budget-bar">
+                    <div class="budget-labels">
+                      <span>Gastado: ${{ campaign.spent }}</span>
+                      <span>Presupuesto: ${{ campaign.budget }}</span>
+                    </div>
+                    <div class="progress-bar">
+                      <div 
+                        class="progress-fill" 
+                        :style="{ width: (campaign.spent/campaign.budget * 100) + '%' }"
+                      ></div>
+                    </div>
+                  </div>
+                  <div class="campaign-roi">
+                    <span>ROI:</span>
+                    <span class="roi-value" :class="{
+                      'positive': campaign.roi > 100,
+                      'negative': campaign.roi <= 100
+                    }">
+                      {{ campaign.roi }}%
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        </section>
       </main>
     </div>
   </div>
@@ -158,17 +214,36 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Line } from 'vue-chartjs'
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
-import { ArrowUpIcon, ArrowDownIcon, UsersIcon, CurrencyDollarIcon, ChartBarIcon, GlobeAltIcon } from '@heroicons/vue/24/solid'
+import { Line, Bar } from 'vue-chartjs'
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend } from 'chart.js'
+import { 
+  ArrowUpIcon, 
+  ArrowDownIcon, 
+  UsersIcon, 
+  ShoppingCartIcon,
+  DollarSignIcon, 
+  BarChart2Icon,
+  SearchIcon,
+  RefreshCw
+} from 'lucide-vue-next'
 import SidebarMenu from '@/components/SidebarMenu.vue'
 
 // Registrar componentes de Chart.js
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
+ChartJS.register(
+  CategoryScale, 
+  LinearScale, 
+  PointElement, 
+  LineElement,
+  BarElement,
+  Title, 
+  Tooltip, 
+  Legend
+)
 
 // Estado
 const isSidebarCollapsed = ref(false)
 const clientName = ref('JDigital Marketing')
+const timeRange = ref('30d')
 
 // KPIs
 const kpis = ref([
@@ -177,65 +252,94 @@ const kpis = ref([
     value: '24,589',
     change: '+12.5%',
     trend: 'up',
+    progress: 85,
     icon: UsersIcon,
-    bgColor: 'bg-blue-500'
+    bgColor: 'bg-blue-100 text-blue-600'
   },
   {
     title: 'Conversiones',
     value: '1,423',
     change: '+23.1%',
     trend: 'up',
-    icon: ChartBarIcon,
-    bgColor: 'bg-[#92d000]'
+    progress: 92,
+    icon: ShoppingCartIcon,
+    bgColor: 'bg-green-100 text-green-600'
   },
   {
-    title: 'ROI',
-    value: '289%',
-    change: '-2.4%',
-    trend: 'down',
-    icon: CurrencyDollarIcon,
-    bgColor: 'bg-orange-500'
-  },
-  {
-    title: 'Posición Media',
-    value: '#4',
-    change: '+2',
+    title: 'Ingresos',
+    value: '$28,950',
+    change: '+18.7%',
     trend: 'up',
-    icon: GlobeAltIcon,
-    bgColor: 'bg-purple-500'
+    progress: 78,
+    icon: DollarSignIcon,
+    bgColor: 'bg-purple-100 text-purple-600'
+  },
+  {
+    title: 'Posición Media SEO',
+    value: '#4.2',
+    change: '+1.5',
+    trend: 'up',
+    progress: 65,
+    icon: SearchIcon,
+    bgColor: 'bg-amber-100 text-amber-600'
   }
 ])
 
-// Datos de la gráfica
+// Datos de las gráficas
 const visitChartData = {
   labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
   datasets: [
     {
-      label: 'Visitas 2025',
+      label: 'Visitas',
       data: [18000, 22000, 19000, 24000, 23000, 24589],
-      borderColor: '#92d000',
-      backgroundColor: 'rgba(146, 208, 0, 0.1)',
+      borderColor: '#3B82F6',
+      backgroundColor: 'rgba(59, 130, 246, 0.1)',
       tension: 0.4,
-      fill: true
+      fill: true,
+      borderWidth: 2
+    }
+  ]
+}
+
+const conversionChartData = {
+  labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+  datasets: [
+    {
+      label: 'Conversiones',
+      data: [850, 920, 1100, 1050, 1350, 1423],
+      backgroundColor: '#10B981',
+      borderRadius: 4,
+      borderWidth: 0
     }
   ]
 }
 
 const chartOptions = {
   responsive: true,
-  maintainAspectRatio: true,
+  maintainAspectRatio: false,
   plugins: {
     legend: {
       display: false
     },
     tooltip: {
-      backgroundColor: '#1e1e1e',
+      backgroundColor: '#1F2937',
       padding: 12,
       titleFont: {
-        size: 13
+        size: 13,
+        weight: 'bold'
       },
       bodyFont: {
         size: 12
+      },
+      cornerRadius: 8,
+      displayColors: false,
+      callbacks: {
+        title: (context) => {
+          return `Mes: ${context[0].label}`
+        },
+        label: (context) => {
+          return `${context.dataset.label}: ${context.raw.toLocaleString()}`
+        }
       }
     }
   },
@@ -243,15 +347,13 @@ const chartOptions = {
     y: {
       beginAtZero: true,
       grid: {
-        display: true,
-        color: '#f3f4f6',
-        drawBorder: false
+        drawBorder: false,
+        color: '#E5E7EB'
       },
       ticks: {
         font: {
           size: 11
-        },
-        maxTicksLimit: 5
+        }
       }
     },
     x: {
@@ -267,10 +369,9 @@ const chartOptions = {
   },
   elements: {
     point: {
-      radius: 3,
-      hoverRadius: 5
-    },
-    line: {
+      radius: 4,
+      hoverRadius: 6,
+      backgroundColor: '#FFFFFF',
       borderWidth: 2
     }
   }
@@ -295,6 +396,18 @@ const seoKeywords = ref([
     position: 8,
     change: -1,
     lastUpdate: '03 Jun 2025'
+  },
+  {
+    term: 'Publicidad en Google Puebla',
+    position: 12,
+    change: 3,
+    lastUpdate: '03 Jun 2025'
+  },
+  {
+    term: 'Diseño web profesional Puebla',
+    position: 5,
+    change: 0,
+    lastUpdate: '03 Jun 2025'
   }
 ])
 
@@ -305,51 +418,525 @@ const campaigns = ref([
     name: 'Campaña Verano 2025',
     status: 'Activa',
     budget: 5000,
-    spent: 2340
+    spent: 2340,
+    roi: 289
   },
   {
     id: 2,
     name: 'Remarketing Clientes',
     status: 'Activa',
     budget: 3000,
-    spent: 1200
+    spent: 1200,
+    roi: 320
   },
   {
     id: 3,
     name: 'SEO Local Puebla',
     status: 'En Pausa',
     budget: 2500,
-    spent: 1800
+    spent: 1800,
+    roi: 150
+  },
+  {
+    id: 4,
+    name: 'Lanzamiento Producto X',
+    status: 'Activa',
+    budget: 7500,
+    spent: 4200,
+    roi: 210
   }
 ])
 
+// Métodos
+const refreshData = () => {
+  // Aquí iría la lógica para actualizar todos los datos
+  console.log('Actualizando datos...')
+}
+
 const refreshSEOData = () => {
-  // Aquí iría la lógica para actualizar los datos de SEO
-  // Por ahora solo actualizamos la fecha
+  // Simular actualización de datos SEO
   seoKeywords.value = seoKeywords.value.map(keyword => ({
     ...keyword,
-    lastUpdate: new Date().toLocaleDateString()
+    lastUpdate: new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }),
+    position: Math.max(1, keyword.position + (Math.random() > 0.5 ? 1 : -1)),
+    change: Math.floor(Math.random() * 5) - 2
   }))
+}
+
+const getInitials = (name) => {
+  return name.split(' ').map(part => part[0]).join('').toUpperCase()
 }
 </script>
 
 <style scoped>
 .dashboard-layout {
   min-height: 100vh;
-  background: #f9fafb;
+  background-color: #F9FAFB;
+  display: flex;
 }
 
 .main-content {
-  transition: all 0.3s ease;
+  flex: 1;
+  transition: margin-left 0.3s ease;
 }
 
-.dashboard-content {
-  padding-bottom: 3rem;
+.dashboard-header {
+  background-color: #FFFFFF;
+  border-bottom: 1px solid #E5E7EB;
+  padding: 1rem 2rem;
 }
 
-@media (max-width: 640px) {
-  .main-content {
-    margin-left: 0;
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.dashboard-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #F3F4F6;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: #4B5563;
+  transition: all 0.2s ease;
+}
+
+.refresh-btn:hover {
+  background-color: #E5E7EB;
+}
+
+.refresh-btn.small {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-name {
+  font-size: 0.875rem;
+  color: #4B5563;
+}
+
+.avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background-color: #3B82F6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+
+.dashboard-main {
+  padding: 1.5rem 2rem;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/* Secciones */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.time-filter {
+  position: relative;
+}
+
+.time-select {
+  padding: 0.5rem 2.5rem 0.5rem 1rem;
+  background-color: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  color: #4B5563;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+}
+
+/* KPIs Grid */
+.kpis-section {
+  margin-bottom: 2rem;
+}
+
+.kpis-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .kpis-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
+}
+
+@media (min-width: 1024px) {
+  .kpis-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.kpi-card {
+  background-color: #FFFFFF;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #E5E7EB;
+  transition: all 0.2s ease;
+}
+
+.kpi-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.kpi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.kpi-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kpi-trend {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.kpi-content {
+  margin-bottom: 1.5rem;
+}
+
+.kpi-title {
+  font-size: 0.875rem;
+  color: #6B7280;
+  margin-bottom: 0.5rem;
+}
+
+.kpi-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.kpi-footer {
+  margin-top: auto;
+}
+
+.progress-bar {
+  height: 0.375rem;
+  background-color: #F3F4F6;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 0.75rem;
+}
+
+/* Charts Section */
+.charts-section {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 1024px) {
+  .charts-section {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.chart-card {
+  background-color: #FFFFFF;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #E5E7EB;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.chart-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.chart-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stat-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.stat-change {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.stat-change.positive {
+  color: #10B981;
+}
+
+.stat-change.negative {
+  color: #EF4444;
+}
+
+.chart-container {
+  height: 250px;
+}
+
+/* Data Section */
+.data-section {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .data-section {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.data-card {
+  background-color: #FFFFFF;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #E5E7EB;
+}
+
+.data-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.data-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* SEO Table */
+.seo-table {
+  overflow-x: auto;
+}
+
+.seo-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.seo-table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background-color: #F9FAFB;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.seo-table td {
+  padding: 1rem;
+  font-size: 0.875rem;
+  color: #4B5563;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.seo-table tr:last-child td {
+  border-bottom: none;
+}
+
+.position-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+
+.position-badge.excellent {
+  background-color: #ECFDF5;
+  color: #059669;
+}
+
+.position-badge.good {
+  background-color: #D1FAE5;
+  color: #047857;
+}
+
+.position-badge.average {
+  background-color: #FEF3C7;
+  color: #B45309;
+}
+
+.position-badge.poor {
+  background-color: #FEE2E2;
+  color: #B91C1C;
+}
+
+.change-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.change-indicator.positive {
+  color: #10B981;
+}
+
+.change-indicator.negative {
+  color: #EF4444;
+}
+
+/* Campaigns List */
+.campaigns-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.campaign-item {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background-color: #F9FAFB;
+  border: 1px solid #E5E7EB;
+}
+
+.campaign-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.campaign-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+.campaign-status {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+}
+
+.campaign-status.active {
+  background-color: #D1FAE5;
+  color: #065F46;
+}
+
+.campaign-status.paused {
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.campaign-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.budget-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.budget-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #6B7280;
+}
+
+.campaign-roi {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #6B7280;
+}
+
+.roi-value {
+  font-weight: 600;
+}
+
+.roi-value.positive {
+  color: #10B981;
+}
+
+.roi-value.negative {
+  color: #EF4444;
 }
 </style>
