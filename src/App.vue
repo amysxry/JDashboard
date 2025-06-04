@@ -10,7 +10,7 @@
 body {
   margin: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #ffffff;
+  background-color: #1e1e1e;
   color: #1e1e1e;
 }
 </style>

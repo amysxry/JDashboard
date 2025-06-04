@@ -1,17 +1,14 @@
 <template>
   <div class="dashboard-layout">
-    <SidebarMenu />
+    <SidebarMenu v-model:collapsed="isSidebarCollapsed" />
     
-    <div 
-      class="main-content"
-      :class="{
-        'lg:ml-[280px]': !isSidebarCollapsed,
-        'lg:ml-[80px]': isSidebarCollapsed
-      }"
-    >
+    <div class="main-content">
       <header class="dashboard-header">
         <div class="header-content">
-          <h1 class="dashboard-title">Dashboard</h1>
+          <div class="welcome-section">
+            <h1 class="dashboard-title">¡Bienvenido, {{ clientName }}! 👋</h1>
+            <p class="welcome-subtitle">Aquí tienes un resumen de tu rendimiento digital</p>
+          </div>
           <div class="header-actions">
             <button class="refresh-btn" @click="refreshData">
               <RefreshCw class="h-4 w-4" />
@@ -214,6 +211,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { supabase } from '@/lib/supabaseClient'
 import { Line, Bar } from 'vue-chartjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend } from 'chart.js'
 import { 
@@ -241,9 +239,29 @@ ChartJS.register(
 )
 
 // Estado
-const isSidebarCollapsed = ref(false)
-const clientName = ref('JDigital Marketing')
+const isSidebarCollapsed = ref(true)
+const clientName = ref('Cargando...')
 const timeRange = ref('30d')
+
+// Función para obtener el nombre del cliente
+const fetchClientName = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('clientes')
+      .select('nombre')
+      .single()
+    
+    if (error) throw error
+    clientName.value = data?.nombre || 'Usuario'
+  } catch (error) {
+    console.error('Error al cargar nombre:', error)
+    clientName.value = 'Usuario'
+  }
+}
+
+onMounted(() => {
+  fetchClientName()
+})
 
 // KPIs
 const kpis = ref([
@@ -292,8 +310,8 @@ const visitChartData = {
     {
       label: 'Visitas',
       data: [18000, 22000, 19000, 24000, 23000, 24589],
-      borderColor: '#3B82F6',
-      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+      borderColor: '#92d000',
+      backgroundColor: 'rgba(146, 208, 0, 0.1)',
       tension: 0.4,
       fill: true,
       borderWidth: 2
@@ -307,7 +325,7 @@ const conversionChartData = {
     {
       label: 'Conversiones',
       data: [850, 920, 1100, 1050, 1350, 1423],
-      backgroundColor: '#10B981',
+      backgroundColor: '#fe7529',
       borderRadius: 4,
       borderWidth: 0
     }
@@ -322,38 +340,19 @@ const chartOptions = {
       display: false
     },
     tooltip: {
-      backgroundColor: '#1F2937',
-      padding: 12,
-      titleFont: {
-        size: 13,
-        weight: 'bold'
-      },
-      bodyFont: {
-        size: 12
-      },
-      cornerRadius: 8,
-      displayColors: false,
-      callbacks: {
-        title: (context) => {
-          return `Mes: ${context[0].label}`
-        },
-        label: (context) => {
-          return `${context.dataset.label}: ${context.raw.toLocaleString()}`
-        }
-      }
+      backgroundColor: '#2a2a2a',
+      titleColor: '#ffffff',
+      bodyColor: '#ffffff',
+      borderColor: 'rgba(146, 208, 0, 0.1)',
     }
   },
   scales: {
     y: {
-      beginAtZero: true,
       grid: {
-        drawBorder: false,
-        color: '#E5E7EB'
+        color: 'rgba(255, 255, 255, 0.1)',
       },
       ticks: {
-        font: {
-          size: 11
-        }
+        color: '#ffffff',
       }
     },
     x: {
@@ -361,18 +360,8 @@ const chartOptions = {
         display: false
       },
       ticks: {
-        font: {
-          size: 11
-        }
+        color: '#ffffff',
       }
-    }
-  },
-  elements: {
-    point: {
-      radius: 4,
-      hoverRadius: 6,
-      backgroundColor: '#FFFFFF',
-      borderWidth: 2
     }
   }
 }
@@ -471,19 +460,48 @@ const getInitials = (name) => {
 <style scoped>
 .dashboard-layout {
   min-height: 100vh;
-  background-color: #F9FAFB;
-  display: flex;
+  background-color: #1e1e1e;
+  color: #ffffff;
 }
 
 .main-content {
-  flex: 1;
+  margin-left: 280px;
+  padding: 1rem;
   transition: margin-left 0.3s ease;
+  background-color: #1e1e1e;
+  min-height: 100vh;
+}
+
+.main-content.lg\:ml-\[80px\] {
+  margin-left: 80px; /* Ancho del sidebar colapsado */
+}
+
+@media (max-width: 1024px) {
+  .main-content {
+    margin-left: 0;
+    padding-top: 4rem; /* Espacio para el botón de menú móvil */
+  }
+}
+
+.welcome-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.welcome-subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
 }
 
 .dashboard-header {
-  background-color: #FFFFFF;
-  border-bottom: 1px solid #E5E7EB;
-  padding: 1rem 2rem;
+  background-color: #2a2a2a;
+  border: 1px solid rgba(146, 208, 0, 0.1);
+  padding: 1.5rem 2rem;
+  margin-bottom: 1rem;
+  border-radius: 0.75rem;
+  margin-top: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .header-content {
@@ -495,9 +513,7 @@ const getInitials = (name) => {
 }
 
 .dashboard-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #111827;
+  color: #ffffff;
 }
 
 .header-actions {
@@ -511,15 +527,16 @@ const getInitials = (name) => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background-color: #F3F4F6;
+  background-color: #92d000;
+  color: #ffffff;
+  border: none;
   border-radius: 0.5rem;
   font-size: 0.875rem;
-  color: #4B5563;
   transition: all 0.2s ease;
 }
 
 .refresh-btn:hover {
-  background-color: #E5E7EB;
+  background-color: #7eb300;
 }
 
 .refresh-btn.small {
@@ -577,11 +594,11 @@ const getInitials = (name) => {
 
 .time-select {
   padding: 0.5rem 2.5rem 0.5rem 1rem;
-  background-color: #FFFFFF;
-  border: 1px solid #D1D5DB;
+  background-color: #2a2a2a;
+  border: 1px solid rgba(146, 208, 0, 0.3);
+  color: #ffffff;
   border-radius: 0.375rem;
   font-size: 0.875rem;
-  color: #4B5563;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -613,16 +630,16 @@ const getInitials = (name) => {
 }
 
 .kpi-card {
-  background-color: #FFFFFF;
+  background-color: #2a2a2a;
+  border: 1px solid rgba(146, 208, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   border-radius: 0.75rem;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid #E5E7EB;
   transition: all 0.2s ease;
 }
 
 .kpi-card:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.1);
   transform: translateY(-2px);
 }
 
@@ -656,14 +673,14 @@ const getInitials = (name) => {
 
 .kpi-title {
   font-size: 0.875rem;
-  color: #6B7280;
+  color: rgba(255, 255, 255, 0.7);
   margin-bottom: 0.5rem;
 }
 
 .kpi-value {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #111827;
+  color: #ffffff;
 }
 
 .kpi-footer {
@@ -697,11 +714,16 @@ const getInitials = (name) => {
 }
 
 .chart-card {
-  background-color: #FFFFFF;
+  background-color: #2a2a2a;
+  border: 1px solid rgba(146, 208, 0, 0.1);
   border-radius: 0.75rem;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid #E5E7EB;
+  transition: all 0.2s ease;
+}
+
+.chart-card:hover {
+  box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
 }
 
 .chart-header {
@@ -714,7 +736,7 @@ const getInitials = (name) => {
 .chart-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #111827;
+  color: #ffffff;
 }
 
 .chart-stats {
@@ -726,7 +748,7 @@ const getInitials = (name) => {
 .stat-value {
   font-size: 1rem;
   font-weight: 600;
-  color: #111827;
+  color: #ffffff;
 }
 
 .stat-change {
@@ -735,11 +757,11 @@ const getInitials = (name) => {
 }
 
 .stat-change.positive {
-  color: #10B981;
+  color: #92d000;
 }
 
 .stat-change.negative {
-  color: #EF4444;
+  color: #fe7529;
 }
 
 .chart-container {
@@ -760,11 +782,16 @@ const getInitials = (name) => {
 }
 
 .data-card {
-  background-color: #FFFFFF;
+  background-color: #2a2a2a;
+  border: 1px solid rgba(146, 208, 0, 0.1);
   border-radius: 0.75rem;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid #E5E7EB;
+  transition: all 0.2s ease;
+}
+
+.data-card:hover {
+  box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
 }
 
 .data-header {
@@ -791,22 +818,22 @@ const getInitials = (name) => {
 }
 
 .seo-table th {
+  background-color: #2a2a2a;
+  color: rgba(255, 255, 255, 0.7);
+  border-bottom: 1px solid rgba(146, 208, 0, 0.1);
   text-align: left;
   padding: 0.75rem 1rem;
   font-size: 0.75rem;
   font-weight: 500;
-  color: #6B7280;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  background-color: #F9FAFB;
-  border-bottom: 1px solid #E5E7EB;
 }
 
 .seo-table td {
   padding: 1rem;
   font-size: 0.875rem;
-  color: #4B5563;
-  border-bottom: 1px solid #E5E7EB;
+  color: #ffffff;
+  border-bottom: 1px solid rgba(146, 208, 0, 0.1);
 }
 
 .seo-table tr:last-child td {
@@ -822,8 +849,8 @@ const getInitials = (name) => {
 }
 
 .position-badge.excellent {
-  background-color: #ECFDF5;
-  color: #059669;
+  background-color: rgba(146, 208, 0, 0.2);
+  color: #92d000;
 }
 
 .position-badge.good {
@@ -837,8 +864,8 @@ const getInitials = (name) => {
 }
 
 .position-badge.poor {
-  background-color: #FEE2E2;
-  color: #B91C1C;
+  background-color: rgba(254, 117, 41, 0.2);
+  color: #fe7529;
 }
 
 .change-indicator {
@@ -867,8 +894,8 @@ const getInitials = (name) => {
 .campaign-item {
   padding: 1rem;
   border-radius: 0.5rem;
-  background-color: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .campaign-info {
@@ -881,7 +908,7 @@ const getInitials = (name) => {
 .campaign-name {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #111827;
+  color: #ffffff;
 }
 
 .campaign-status {
@@ -892,13 +919,13 @@ const getInitials = (name) => {
 }
 
 .campaign-status.active {
-  background-color: #D1FAE5;
-  color: #065F46;
+  background-color: rgba(146, 208, 0, 0.2);
+  color: #92d000;
 }
 
 .campaign-status.paused {
-  background-color: #FEF3C7;
-  color: #92400E;
+  background-color: rgba(254, 117, 41, 0.2);
+  color: #fe7529;
 }
 
 .campaign-stats {
@@ -933,10 +960,10 @@ const getInitials = (name) => {
 }
 
 .roi-value.positive {
-  color: #10B981;
+  color: #92d000;
 }
 
 .roi-value.negative {
-  color: #EF4444;
+  color: #fe7529;
 }
 </style>

@@ -1,37 +1,22 @@
 <template>
-  <div>
+  <div class="sidebar-container">
     <!-- Overlay para móviles -->
     <div 
       v-if="isMobile && isOpen" 
-      class="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+      class="fixed inset-0 bg-black bg-opacity-50 z-40"
       @click="closeSidebar"
     ></div>
 
-    <!-- Botón hamburguesa para móviles -->
-    <button 
-      v-if="isMobile"
-      @click="toggleSidebar"
-      class="fixed top-4 left-4 z-30 lg:hidden text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
-    >
-      <Menu class="h-6 w-6" />
-    </button>
-
-    <!-- Botón de notificaciones -->
-    <button 
-      class="fixed top-4 right-4 z-30 text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
-    >
-      <Bell class="h-6 w-6" />
-    </button>
-
     <!-- Sidebar -->
     <aside 
-      ref="sidebarRef"
       :class="[
-        'sidebar', 
-        { 
-          'sidebar-collapsed': isCollapsed && !isMobile,
+        'sidebar fixed top-0 left-0 h-full bg-dark z-50',
+        {
+          'w-[280px]': !isCollapsed && !isMobile,
+          'w-[80px]': isCollapsed && !isMobile,
+          'w-[280px]': isMobile,
           '-translate-x-full': isMobile && !isOpen,
-          'lg:translate-x-0': !isMobile
+          'translate-x-0': !isMobile || (isMobile && isOpen)
         }
       ]"
     >
@@ -94,6 +79,15 @@
         </ul>
       </nav>
     </aside>
+
+    <!-- Botón de menú móvil -->
+    <button 
+      v-if="isMobile"
+      @click="toggleSidebar"
+      class="fixed top-4 left-4 z-50 bg-dark p-2 rounded-lg hover:bg-gray-700"
+    >
+      <Menu class="h-6 w-6 text-white" />
+    </button>
   </div>
 </template>
 
@@ -160,18 +154,18 @@ onUnmounted(() => {
 
 <style scoped>
 .sidebar {
-  width: 280px;
   background-color: #1e1e1e;
+  width: 280px;
   height: 100vh;
   position: fixed;
   top: 0;
   left: 0;
   display: flex;
   flex-direction: column;
-  transition: transform 0.3s ease, width 0.3s ease;
+  transition: all 0.3s ease;
   border-right: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 2px 0 8px rgba(0,0,0,0.1);
   z-index: 30;
-  transform: translateX(0);
 }
 
 .sidebar-collapsed {
@@ -269,7 +263,6 @@ onUnmounted(() => {
 @media (max-width: 1024px) {
   .sidebar {
     transform: translateX(-100%);
-    z-index: 40;
   }
   
   .sidebar.-translate-x-full {
@@ -278,20 +271,6 @@ onUnmounted(() => {
   
   .sidebar:not(.-translate-x-full) {
     transform: translateX(0);
-  }
-  
-  .sidebar-collapsed {
-    width: 280px;
-  }
-  
-  .main-content {
-    padding-top: 4rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .main-content {
-    padding-top: 0;
   }
 }
 </style>
