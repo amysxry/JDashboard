@@ -7,6 +7,10 @@
         <div class="header-content">
           <div class="welcome-section">
             <h1 class="dashboard-title">¡Bienvenido, {{ clientName }}! 👋</h1>
+            <div class="saldo-section" v-if="clientBalance !== null">
+              <span class="saldo-label">Saldo de cuenta:</span>
+              <span class="saldo-value">${{ formatCurrency(clientBalance) }}</span>
+            </div>
             <p class="welcome-subtitle">Aquí tienes un resumen de tu rendimiento digital</p>
           </div>
           <div class="header-actions">
@@ -32,7 +36,6 @@
               <select v-model="timeRange" class="time-select">
                 <option value="7d">Últimos 7 días</option>
                 <option value="30d">Últimos 30 días</option>
-                <option value="90d">Últimos 90 días</option>
               </select>
             </div>
           </div>
@@ -51,9 +54,10 @@
                 <div :class="['kpi-icon', kpi.bgColor]">
                   <component :is="kpi.icon" class="h-5 w-5" />
                 </div>
-                <div v-if="kpi.change" class="kpi-trend" :class="kpi.trend === 'up' ? 'text-green-500' : 'text-red-500'">
-                  <component :is="kpi.trend === 'up' ? ArrowUpIcon : ArrowDownIcon" class="h-4 w-4" />
-                  <span>{{ kpi.change }}</span>
+                <div class="help-container"
+                     @mouseenter="showPopover(kpi.title, $event)"
+                     @mouseleave="hidePopover">
+                  <HelpCircle class="h-4 w-4 text-gray-400 hover:text-gray-200 transition-colors cursor-help" />
                 </div>
               </div>
               <div class="kpi-content">
@@ -77,9 +81,10 @@
           <div class="chart-card">
             <div class="chart-header">
               <h3 class="chart-title">Visitas al Sitio Web</h3>
-              <div class="chart-stats">
-                <span class="stat-value">{{ totalSessions.toLocaleString() }}</span>
-                <span class="stat-change positive">+X.X%</span>
+              <div class="help-container"
+                   @mouseenter="showPopover('Visitas al Sitio Web', $event)"
+                   @mouseleave="hidePopover">
+                <HelpCircle class="h-4 w-4 text-gray-400 hover:text-gray-200 transition-colors cursor-help" />
               </div>
             </div>
             <div class="chart-container">
@@ -98,9 +103,10 @@
           <div class="chart-card">
             <div class="chart-header">
               <h3 class="chart-title">Conversiones</h3>
-              <div class="chart-stats">
-                <span class="stat-value">{{ totalConversions.toLocaleString() }}</span>
-                 <span class="stat-change positive">+X.X%</span>
+              <div class="help-container"
+                   @mouseenter="showPopover('Conversiones', $event)"
+                   @mouseleave="hidePopover">
+                <HelpCircle class="h-4 w-4 text-gray-400 hover:text-gray-200 transition-colors cursor-help" />
               </div>
             </div>
             <div class="chart-container">
@@ -121,13 +127,11 @@
           <div class="data-card">
             <div class="data-header">
               <h3 class="data-title">Posicionamiento SEO</h3>
-              <button
-                @click="refreshSEOData"
-                class="refresh-btn small"
-              >
-                <RefreshCw class="h-3 w-3" />
-                <span>Actualizar</span>
-              </button>
+              <div class="help-container"
+                   @mouseenter="showPopover('Posicionamiento SEO', $event)"
+                   @mouseleave="hidePopover">
+                <HelpCircle class="h-4 w-4 text-gray-400 hover:text-gray-200 transition-colors cursor-help" />
+              </div>
             </div>
             <div class="seo-table">
               <table>
@@ -174,10 +178,11 @@
           <div class="data-card">
             <div class="data-header">
               <h3 class="data-title">Campañas Activas</h3>
-              <button class="refresh-btn small">
-                <RefreshCw class="h-3 w-3" />
-                <span>Actualizar</span>
-              </button>
+              <div class="help-container"
+                   @mouseenter="showPopover('Campañas Activas', $event)"
+                   @mouseleave="hidePopover">
+                <HelpCircle class="h-4 w-4 text-gray-400 hover:text-gray-200 transition-colors cursor-help" />
+              </div>
             </div>
             <div class="campaigns-list">
               <div v-for="campaign in campaigns" :key="campaign.id" class="campaign-item">
@@ -219,11 +224,20 @@
         </section>
       </main>
     </div>
+
+    <Transition name="popover-fade">
+      <div v-if="showHelpPopover"
+           class="help-popover"
+           :style="{ top: popoverY + 'px', left: popoverX + 'px' }">
+        <div class="popover-arrow"></div>
+        <p class="popover-text">{{ currentHelpText }}</p>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { supabase } from '@/lib/supabaseClient'
 import { Line, Bar } from 'vue-chartjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend } from 'chart.js'
@@ -233,7 +247,9 @@ import {
   UsersIcon,
   ShoppingCartIcon,
   BarChart2Icon,
-  RefreshCw
+  RefreshCw,
+  HelpCircle,
+  PercentIcon // Importar el nuevo icono para Porcentaje de Conversión
 } from 'lucide-vue-next'
 import SidebarMenu from '@/components/SidebarMenu.vue'
 
@@ -252,10 +268,31 @@ ChartJS.register(
 // Estado
 const isSidebarCollapsed = ref(true)
 const clientName = ref('Cargando...')
-const timeRange = ref('30d') // Rango de tiempo para los datos de GA
-const gaData = ref([])       // Almacena los datos de Google Analytics
-const isLoading = ref(true); // Para mostrar estado de carga
-const clientGaId = ref(null); // Nuevo ref para almacenar el ID del cliente de la tabla 'clientes'
+const clientBalance = ref(null); // Nuevo ref para el saldo del cliente
+const timeRange = ref('30d')
+const gaData = ref([])
+const isLoading = ref(true);
+const clientGaId = ref(null);
+
+// Estado del Popover de Ayuda
+const showHelpPopover = ref(false);
+const currentHelpText = ref('');
+const popoverX = ref(0);
+const popoverY = ref(0);
+let hidePopoverTimeout = null;
+
+// Definiciones de ayuda más fáciles y sencillas
+const helpDefinitions = {
+  'Visitas Totales (Sesiones)': 'Cuántas veces la gente visitó tu sitio web. Una visita es cuando alguien navega por tu sitio.',
+  'Usuarios Activos': 'Cuántas personas diferentes visitaron tu sitio web.',
+  'Conversiones': 'Cuántas veces la gente hizo algo importante en tu sitio (ej. llenó un formulario, hizo una compra).',
+  'Porcentaje de Conversión': 'El porcentaje de visitas que terminaron en una acción importante (ej. compra, contacto).',
+  'Tasa de Rebote Promedio': 'Porcentaje de visitas donde la gente se fue de inmediato. Si es alta, puede que algo no les interesara.',
+  'Vistas de Página': 'El número total de veces que se vieron las páginas de tu sitio.',
+  'Visitas al Sitio Web': 'Cómo ha cambiado el número de visitas a tu sitio web con el tiempo.',
+  'Posicionamiento SEO': 'Qué tan arriba aparece tu sitio en los resultados de búsqueda de Google (orgánicos). Un número más bajo es mejor.',
+  'Campañas Activas': 'Cómo van tus anuncios pagados (ej. en Google). Muestra cuánto se ha gastado y si están dando ganancias.'
+};
 
 // --- Funciones de Utilidad ---
 const getInitials = (name) => {
@@ -263,36 +300,43 @@ const getInitials = (name) => {
   return name.split(' ').map(part => part[0]).join('').toUpperCase()
 }
 
-// Función para calcular rangos de fechas
+// Función para formatear moneda
+const formatCurrency = (value) => {
+  if (value === null || isNaN(value)) return '0.00';
+  return parseFloat(value).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+
+// Función para calcular rangos de fechas (CORREGIDA)
 const getDateRange = (range) => {
   const today = new Date();
-  const endDate = today.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+  const endDate = today.toISOString().split('T')[0]; // Fecha actual como fin
 
-  let startDate = '';
+  let startDateObj = new Date(today); // Crear una nueva instancia para calcular la fecha de inicio
+
   switch (range) {
     case '7d':
-      today.setDate(today.getDate() - 7);
+      startDateObj.setDate(startDateObj.getDate() - 7);
       break;
     case '30d':
-      today.setDate(today.getDate() - 30);
+      startDateObj.setDate(startDateObj.getDate() - 30);
       break;
+    // La opción de 90d ya no está en el selector, pero la función la sigue manejando si se le pasa
     case '90d':
-      today.setDate(today.getDate() - 90);
+      startDateObj.setDate(startDateObj.getDate() - 90);
       break;
-    default:
-      today.setDate(today.getDate() - 30); // Por defecto 30 días
+    default: // En caso de que se pase un valor no esperado, por defecto 30 días
+      startDateObj.setDate(startDateObj.getDate() - 30);
   }
-  startDate = today.toISOString().split('T')[0];
+  const startDate = startDateObj.toISOString().split('T')[0]; // Fecha de inicio calculada
   return { startDate, endDate };
 };
 
 
 // --- Funciones para Obtener Datos ---
-
-// Función para obtener el nombre de la empresa del cliente y su ID de cliente (UUID)
 const fetchClientInfo = async () => {
   isLoading.value = true;
-  clientGaId.value = null; // Reiniciar clientGaId al inicio de la carga
+  clientGaId.value = null;
+  clientBalance.value = null; // Resetear saldo
 
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -304,29 +348,30 @@ const fetchClientInfo = async () => {
       isLoading.value = false;
       return;
     }
-    console.log("Usuario autenticado (auth_id):", user.id); // Log para depuración
+    console.log("Usuario autenticado (auth_id):", user.id);
 
-    // 1. Consulta la tabla 'clientes' usando el auth_id del usuario logueado
+    // Modificado para también obtener el saldo
     const { data: clientData, error: clientError } = await supabase
       .from('clientes')
-      .select('id, empresa') // Selecciona 'id' (el UUID de clientes) y 'empresa'
-      .eq('auth_id', user.id) // <--- ¡Este es el punto clave! Usa auth_id
+      .select('id, empresa, saldo') // Incluir 'saldo'
+      .eq('auth_id', user.id)
       .single();
 
     if (clientError) {
       console.error('Error al cargar información del cliente desde tabla "clientes" (puede ser por RLS o no hay un cliente vinculado al auth_id):', clientError);
       clientName.value = 'Usuario';
       gaData.value = [];
-      isLoading.value = false; // Marcar como cargado (con error)
-      return; // Salir si no se encuentra el cliente
+      isLoading.value = false;
+      return;
     } else {
-      clientName.value = clientData?.empresa || 'Usuario'; // Usa la columna 'empresa'
-      clientGaId.value = clientData?.id; // Almacena el ID del cliente (UUID)
+      clientName.value = clientData?.empresa || 'Usuario';
+      clientGaId.value = clientData?.id;
+      clientBalance.value = clientData?.saldo || 0; // Asignar el saldo, por defecto 0 si es nulo
       console.log("Nombre del cliente (empresa):", clientName.value);
       console.log("ID del cliente (UUID de la tabla clientes):", clientGaId.value);
+      console.log("Saldo del cliente:", clientBalance.value);
     }
 
-    // 2. Si se obtuvo el ID del cliente, procede a cargar los datos de Analytics
     if (clientGaId.value) {
       await fetchAnalyticsData();
     } else {
@@ -344,9 +389,8 @@ const fetchClientInfo = async () => {
 };
 
 
-// Función para obtener los datos de Google Analytics (ahora usa clientGaId)
 const fetchAnalyticsData = async () => {
-  isLoading.value = true; // Mantener isLoading en true mientras se cargan los datos de GA
+  isLoading.value = true;
   try {
     if (!clientGaId.value) {
       console.warn("Client ID no disponible, no se pueden cargar datos de GA.");
@@ -361,8 +405,8 @@ const fetchAnalyticsData = async () => {
 
     const { data, error } = await supabase
       .from('ga_metrics_cache')
-      .select('date, sessions, users, conversions, bounce_rate, avg_session_duration, page_views') // Columnas en ga_metrics_cache
-      .eq('cliente_id', clientGaId.value) // Usa el ID del cliente aquí (el UUID de la tabla 'clientes')
+      .select('date, sessions, users, conversions, bounce_rate, avg_session_duration, page_views')
+      .eq('cliente_id', clientGaId.value)
       .gte('date', startDate)
       .lte('date', endDate)
       .order('date', { ascending: true });
@@ -378,7 +422,6 @@ const fetchAnalyticsData = async () => {
   }
 };
 
-// Computed properties (calculan a partir de gaData)
 const totalSessions = computed(() => {
   return gaData.value.reduce((sum, row) => sum + (row.sessions || 0), 0);
 });
@@ -396,15 +439,11 @@ const averageBounceRate = computed(() => {
   return gaData.value.length > 0 ? (totalBounceRate / gaData.value.length).toFixed(2) : '0.00';
 });
 
-const averageSessionDuration = computed(() => {
-  const totalDuration = gaData.value.reduce((sum, row) => sum + (row.avg_session_duration || 0), 0);
-  const totalSessionsCount = totalSessions.value;
-  if (totalSessionsCount === 0 || totalDuration === 0) return '00:00';
-
-  const averageSeconds = totalDuration / totalSessionsCount;
-  const minutes = Math.floor(averageSeconds / 60);
-  const seconds = Math.floor(averageSeconds % 60);
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+const conversionRate = computed(() => {
+  const totalSessionsVal = totalSessions.value;
+  const totalConversionsVal = totalConversions.value;
+  if (totalSessionsVal === 0) return '0.00';
+  return ((totalConversionsVal / totalSessionsVal) * 100).toFixed(2);
 });
 
 const totalPageViews = computed(() => {
@@ -442,22 +481,22 @@ const kpisData = computed(() => {
       bgColor: 'bg-green-100 text-green-600'
     },
     {
+      title: 'Porcentaje de Conversión',
+      value: `${conversionRate.value}%`,
+      change: null,
+      trend: 'up',
+      progress: 80,
+      icon: PercentIcon,
+      bgColor: 'bg-yellow-100 text-yellow-600'
+    },
+    {
       title: 'Tasa de Rebote Promedio',
       value: `${averageBounceRate.value}%`,
       change: null,
-      trend: 'down',
-      progress: 70,
+      trend: 'down', // Asumimos 'down' es bueno para la tasa de rebote
+      progress: 70, // Esto podría ser inverso para la tasa de rebote (menos es mejor)
       icon: BarChart2Icon,
       bgColor: 'bg-red-100 text-red-600'
-    },
-    {
-      title: 'Duración Sesión Promedio',
-      value: averageSessionDuration.value,
-      change: null,
-      trend: 'up',
-      progress: 75,
-      icon: BarChart2Icon,
-      bgColor: 'bg-purple-100 text-purple-600'
     },
     {
       title: 'Vistas de Página',
@@ -471,7 +510,6 @@ const kpisData = computed(() => {
   ];
 });
 
-// Datos de las gráficas (sin cambios)
 const visitChartData = computed(() => {
   const sortedData = [...gaData.value].sort((a, b) => new Date(a.date) - new Date(b.date));
   const labels = sortedData.map(row => new Date(row.date).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }));
@@ -546,7 +584,6 @@ const chartOptions = {
   }
 }
 
-// Datos SEO (sin cambios, solo datos dummy)
 const seoKeywords = ref([
   {
     term: 'Agencia de marketing digital en Puebla',
@@ -580,7 +617,6 @@ const seoKeywords = ref([
   }
 ])
 
-// Campañas (sin cambios, solo datos dummy)
 const campaigns = ref([
   {
     id: 1,
@@ -616,7 +652,6 @@ const campaigns = ref([
   }
 ])
 
-// Métodos (sin cambios, solo se llama a fetchClientInfo que es la que se modificó)
 const refreshData = async () => {
   console.log('Actualizando todos los datos...');
   await fetchClientInfo();
@@ -631,19 +666,58 @@ const refreshSEOData = () => {
   }))
 }
 
-// --- Lifecycle Hook ---
+const showPopover = (title, event) => {
+  clearTimeout(hidePopoverTimeout);
+  currentHelpText.value = helpDefinitions[title] || 'No hay descripción disponible.';
+  showHelpPopover.value = true;
+
+  nextTick(() => {
+    const iconRect = event.currentTarget.getBoundingClientRect();
+    const popoverElement = document.querySelector('.help-popover');
+    if (popoverElement) {
+      // Ajustar posición del popover para que aparezca a la derecha del icono
+      popoverX.value = iconRect.right + 10;
+      popoverY.value = iconRect.top + (iconRect.height / 2) - (popoverElement.offsetHeight / 2);
+
+      // Simple ajuste para que no se salga de la pantalla por la derecha
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+      if (popoverX.value + popoverElement.offsetWidth > viewportWidth - 20) {
+        popoverX.value = iconRect.left - popoverElement.offsetWidth - 10;
+        popoverElement.classList.add('popover-left'); // Para ajustar la flecha
+      } else {
+        popoverElement.classList.remove('popover-left');
+      }
+
+      // Simple ajuste para que no se salga de la pantalla por arriba o abajo
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+      if (popoverY.value < 10) {
+        popoverY.value = 10;
+      }
+      if (popoverY.value + popoverElement.offsetHeight > viewportHeight - 10) {
+        popoverY.value = viewportHeight - popoverElement.offsetHeight - 10;
+      }
+    }
+  });
+};
+
+const hidePopover = () => {
+  hidePopoverTimeout = setTimeout(() => {
+    showHelpPopover.value = false;
+    currentHelpText.value = '';
+  }, 100);
+};
+
 onMounted(async () => {
   await fetchClientInfo();
 });
 
-// --- Watchers ---
 watch(timeRange, () => {
   fetchAnalyticsData();
 });
 </script>
 
 <style scoped>
-/* Tu CSS existente sin cambios */
+/* Tu CSS existente */
 .dashboard-layout {
   min-height: 100vh;
   background-color: #1e1e1e;
@@ -657,7 +731,7 @@ watch(timeRange, () => {
   background-color: #1e1e1e;
   min-height: 100vh;
   max-width: 1800px;
-  margin-right: -7rem;
+  margin-right: -7rem; /* Ajuste para ocupar más espacio si es necesario */
   margin-left: auto;
   width: calc(98% - 80px);
 }
@@ -675,17 +749,50 @@ watch(timeRange, () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap; /* Permite que los elementos se envuelvan en pantallas pequeñas */
+  gap: 1rem; /* Espacio entre los elementos del encabezado */
   max-width: 100%;
   margin: 0 auto;
 }
 
+.welcome-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem; /* Espacio entre el título y el subtítulo/saldo */
+}
+
 .dashboard-title {
   color: #ffffff;
+  margin-bottom: 0; /* Elimina margen inferior extra */
 }
 
 .welcome-subtitle {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  margin-top: 0.5rem; /* Asegura espacio si el saldo está arriba */
+}
+
+/* Estilos para la sección de saldo */
+.saldo-section {
+  background-color: rgba(146, 208, 0, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  display: inline-flex; /* Permite que el contenedor se ajuste al contenido */
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #92d000;
+  margin-top: 0.5rem; /* Espacio con el título */
+}
+
+.saldo-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+.saldo-value {
+  color: #ffffff;
 }
 
 
@@ -754,6 +861,8 @@ watch(timeRange, () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+  flex-wrap: wrap; /* Permite que se envuelvan en pantallas pequeñas */
+  gap: 1rem;
 }
 
 .section-title {
@@ -788,20 +897,20 @@ watch(timeRange, () => {
 
 .kpis-grid {
   display: grid;
-  grid-template-columns: repeat(1, 1fr);
+  grid-template-columns: repeat(1, 1fr); /* Default for mobile */
   grid-gap: 1.5rem;
   margin-bottom: 2rem;
 }
 
 @media (min-width: 640px) {
   .kpis-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, 1fr); /* 2 columns on small screens */
   }
 }
 
 @media (min-width: 1024px) {
   .kpis-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, 1fr); /* 4 columns on large screens */
   }
 }
 
@@ -811,6 +920,7 @@ watch(timeRange, () => {
   border-radius: 1rem;
   padding: 1.5rem;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .kpi-card:hover {
@@ -894,6 +1004,7 @@ watch(timeRange, () => {
   border-radius: 1rem;
   padding: 1.5rem;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .chart-card:hover {
@@ -962,6 +1073,7 @@ watch(timeRange, () => {
   border-radius: 1rem;
   padding: 1.5rem;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .data-card:hover {
@@ -1008,6 +1120,44 @@ watch(timeRange, () => {
 }
 .seo-table tr:last-child td {
   border-bottom: none;
+}
+
+.position-badge {
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.8rem;
+  display: inline-block;
+}
+
+.position-badge.excellent {
+  background-color: rgba(146, 208, 0, 0.2);
+  color: #92d000;
+}
+.position-badge.good {
+  background-color: rgba(60, 180, 255, 0.2);
+  color: #3cb4ff;
+}
+.position-badge.average {
+  background-color: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+}
+.position-badge.poor {
+  background-color: rgba(220, 53, 69, 0.2);
+  color: #dc3545;
+}
+
+.change-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 500;
+}
+.change-indicator.positive {
+  color: #92d000;
+}
+.change-indicator.negative {
+  color: #fe7529;
 }
 
 .campaigns-list {
@@ -1103,5 +1253,75 @@ watch(timeRange, () => {
   color: rgba(255, 255, 255, 0.7);
   font-style: italic;
   margin-bottom: 1.5rem;
+}
+
+.help-container {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+  padding: 5px;
+}
+
+.chart-header, .data-header {
+  position: relative;
+  padding-right: 2.5rem;
+}
+
+.help-popover {
+  position: fixed;
+  background-color: #3a3a3a;
+  border: 1px solid rgba(146, 208, 0, 0.3);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  max-width: 250px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  color: #e0e0e0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  pointer-events: none; /* No interactuar con el mouse, solo mostrar */
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  transform-origin: left center;
+}
+
+/* Transiciones para el popover */
+.popover-fade-enter-active, .popover-fade-leave-active {
+  transition: opacity 0.2s, transform 0.2s;
+}
+.popover-fade-enter-from, .popover-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+.popover-text {
+  margin: 0;
+}
+
+.popover-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 6px 6px 6px 0; /* Flecha hacia la izquierda */
+  border-color: transparent #3a3a3a transparent transparent;
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.help-popover.popover-left .popover-arrow {
+  border-width: 6px 0 6px 6px; /* Flecha hacia la derecha */
+  border-color: transparent transparent transparent #3a3a3a;
+  left: auto;
+  right: -6px;
+}
+
+/* Media query para ajustar el margen del main-content cuando el sidebar está colapsado */
+.dashboard-layout.collapsed .main-content {
+  margin-left: 80px; /* Ajusta este valor al ancho de tu sidebar colapsado */
 }
 </style>
