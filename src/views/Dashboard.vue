@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard-layout">
     <SidebarMenu v-model:collapsed="isSidebarCollapsed" />
-    
+
     <div class="main-content">
       <header class="dashboard-header">
         <div class="header-content">
@@ -25,7 +25,6 @@
       </header>
 
       <main class="dashboard-main">
-        <!-- Sección de KPIs -->
         <section class="kpis-section">
           <div class="section-header">
             <h2 class="section-title">Resumen de rendimiento</h2>
@@ -37,14 +36,22 @@
               </select>
             </div>
           </div>
-          
-          <div class="kpis-grid">
-            <div v-for="kpi in kpis" :key="kpi.title" class="kpi-card">
+
+          <div v-if="isLoading" class="loading-message">Cargando datos...</div>
+          <div v-else-if="!clientGaId" class="no-data-message">
+            No se pudo obtener el ID del cliente para cargar los datos de Google Analytics.
+            Asegúrate de que tu usuario esté vinculado a un cliente en la tabla 'clientes' a través de su 'auth_id'.
+          </div>
+          <div v-else-if="gaData.length === 0" class="no-data-message">
+            No hay datos de Google Analytics disponibles para el rango de fechas seleccionado.
+          </div>
+          <div v-else class="kpis-grid">
+            <div v-for="kpi in kpisData" :key="kpi.title" class="kpi-card">
               <div class="kpi-header">
                 <div :class="['kpi-icon', kpi.bgColor]">
                   <component :is="kpi.icon" class="h-5 w-5" />
                 </div>
-                <div class="kpi-trend" :class="kpi.trend === 'up' ? 'text-green-500' : 'text-red-500'">
+                <div v-if="kpi.change" class="kpi-trend" :class="kpi.trend === 'up' ? 'text-green-500' : 'text-red-500'">
                   <component :is="kpi.trend === 'up' ? ArrowUpIcon : ArrowDownIcon" class="h-4 w-4" />
                   <span>{{ kpi.change }}</span>
                 </div>
@@ -55,8 +62,8 @@
               </div>
               <div class="kpi-footer">
                 <div class="progress-bar">
-                  <div 
-                    class="progress-fill" 
+                  <div
+                    class="progress-fill"
                     :class="kpi.trend === 'up' ? 'bg-green-500' : 'bg-red-500'"
                     :style="{ width: kpi.progress + '%' }"
                   ></div>
@@ -66,48 +73,55 @@
           </div>
         </section>
 
-        <!-- Sección de gráficas principales -->
         <section class="charts-section">
           <div class="chart-card">
             <div class="chart-header">
               <h3 class="chart-title">Visitas al Sitio Web</h3>
               <div class="chart-stats">
-                <span class="stat-value">24,589</span>
-                <span class="stat-change positive">+15.8%</span>
+                <span class="stat-value">{{ totalSessions.toLocaleString() }}</span>
+                <span class="stat-change positive">+X.X%</span>
               </div>
             </div>
             <div class="chart-container">
-              <Line 
-                :data="visitChartData" 
+              <Line
+                :data="visitChartData"
                 :options="chartOptions"
+                v-if="!isLoading && gaData.length > 0"
               />
+              <div v-else class="chart-placeholder">
+                <p v-if="isLoading">Cargando gráfica...</p>
+                <p v-else>No hay datos disponibles para la gráfica de visitas.</p>
+              </div>
             </div>
           </div>
-          
+
           <div class="chart-card">
             <div class="chart-header">
               <h3 class="chart-title">Conversiones</h3>
               <div class="chart-stats">
-                <span class="stat-value">1,423</span>
-                <span class="stat-change positive">+23.1%</span>
+                <span class="stat-value">{{ totalConversions.toLocaleString() }}</span>
+                 <span class="stat-change positive">+X.X%</span>
               </div>
             </div>
             <div class="chart-container">
-              <Bar 
-                :data="conversionChartData" 
+              <Bar
+                :data="conversionChartData"
                 :options="chartOptions"
+                v-if="!isLoading && gaData.length > 0"
               />
+              <div v-else class="chart-placeholder">
+                <p v-if="isLoading">Cargando gráfica...</p>
+                <p v-else>No hay datos disponibles para la gráfica de conversiones.</p>
+              </div>
             </div>
           </div>
         </section>
 
-        <!-- Sección de datos SEO y Campañas -->
         <section class="data-section">
-          <!-- Tabla de posicionamiento SEO -->
           <div class="data-card">
             <div class="data-header">
               <h3 class="data-title">Posicionamiento SEO</h3>
-              <button 
+              <button
                 @click="refreshSEOData"
                 class="refresh-btn small"
               >
@@ -143,7 +157,7 @@
                         'positive': keyword.change > 0,
                         'negative': keyword.change < 0
                       }">
-                        <component 
+                        <component
                           :is="keyword.change > 0 ? ArrowUpIcon : ArrowDownIcon"
                           class="h-3 w-3"
                         />
@@ -156,8 +170,7 @@
               </table>
             </div>
           </div>
-          
-          <!-- Lista de campañas -->
+
           <div class="data-card">
             <div class="data-header">
               <h3 class="data-title">Campañas Activas</h3>
@@ -184,8 +197,8 @@
                       <span>Presupuesto: ${{ campaign.budget }}</span>
                     </div>
                     <div class="progress-bar">
-                      <div 
-                        class="progress-fill" 
+                      <div
+                        class="progress-fill"
                         :style="{ width: (campaign.spent/campaign.budget * 100) + '%' }"
                       ></div>
                     </div>
@@ -210,127 +223,294 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { supabase } from '@/lib/supabaseClient'
 import { Line, Bar } from 'vue-chartjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend } from 'chart.js'
-import { 
-  ArrowUpIcon, 
-  ArrowDownIcon, 
-  UsersIcon, 
+import {
+  ArrowUpIcon,
+  ArrowDownIcon,
+  UsersIcon,
   ShoppingCartIcon,
-  DollarSignIcon, 
   BarChart2Icon,
-  SearchIcon,
   RefreshCw
 } from 'lucide-vue-next'
 import SidebarMenu from '@/components/SidebarMenu.vue'
 
 // Registrar componentes de Chart.js
 ChartJS.register(
-  CategoryScale, 
-  LinearScale, 
-  PointElement, 
+  CategoryScale,
+  LinearScale,
+  PointElement,
   LineElement,
   BarElement,
-  Title, 
-  Tooltip, 
+  Title,
+  Tooltip,
   Legend
 )
 
 // Estado
 const isSidebarCollapsed = ref(true)
 const clientName = ref('Cargando...')
-const timeRange = ref('30d')
+const timeRange = ref('30d') // Rango de tiempo para los datos de GA
+const gaData = ref([])       // Almacena los datos de Google Analytics
+const isLoading = ref(true); // Para mostrar estado de carga
+const clientGaId = ref(null); // Nuevo ref para almacenar el ID del cliente de la tabla 'clientes'
 
-// Función para obtener el nombre del cliente
-const fetchClientName = async () => {
+// --- Funciones de Utilidad ---
+const getInitials = (name) => {
+  if (!name) return '';
+  return name.split(' ').map(part => part[0]).join('').toUpperCase()
+}
+
+// Función para calcular rangos de fechas
+const getDateRange = (range) => {
+  const today = new Date();
+  const endDate = today.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+
+  let startDate = '';
+  switch (range) {
+    case '7d':
+      today.setDate(today.getDate() - 7);
+      break;
+    case '30d':
+      today.setDate(today.getDate() - 30);
+      break;
+    case '90d':
+      today.setDate(today.getDate() - 90);
+      break;
+    default:
+      today.setDate(today.getDate() - 30); // Por defecto 30 días
+  }
+  startDate = today.toISOString().split('T')[0];
+  return { startDate, endDate };
+};
+
+
+// --- Funciones para Obtener Datos ---
+
+// Función para obtener el nombre de la empresa del cliente y su ID de cliente (UUID)
+const fetchClientInfo = async () => {
+  isLoading.value = true;
+  clientGaId.value = null; // Reiniciar clientGaId al inicio de la carga
+
   try {
-    const { data, error } = await supabase
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      console.error('Error al obtener usuario autenticado:', userError);
+      clientName.value = 'Usuario';
+      gaData.value = [];
+      isLoading.value = false;
+      return;
+    }
+    console.log("Usuario autenticado (auth_id):", user.id); // Log para depuración
+
+    // 1. Consulta la tabla 'clientes' usando el auth_id del usuario logueado
+    const { data: clientData, error: clientError } = await supabase
       .from('clientes')
-      .select('nombre')
-      .single()
-    
-    if (error) throw error
-    clientName.value = data?.nombre || 'Usuario'
+      .select('id, empresa') // Selecciona 'id' (el UUID de clientes) y 'empresa'
+      .eq('auth_id', user.id) // <--- ¡Este es el punto clave! Usa auth_id
+      .single();
+
+    if (clientError) {
+      console.error('Error al cargar información del cliente desde tabla "clientes" (puede ser por RLS o no hay un cliente vinculado al auth_id):', clientError);
+      clientName.value = 'Usuario';
+      gaData.value = [];
+      isLoading.value = false; // Marcar como cargado (con error)
+      return; // Salir si no se encuentra el cliente
+    } else {
+      clientName.value = clientData?.empresa || 'Usuario'; // Usa la columna 'empresa'
+      clientGaId.value = clientData?.id; // Almacena el ID del cliente (UUID)
+      console.log("Nombre del cliente (empresa):", clientName.value);
+      console.log("ID del cliente (UUID de la tabla clientes):", clientGaId.value);
+    }
+
+    // 2. Si se obtuvo el ID del cliente, procede a cargar los datos de Analytics
+    if (clientGaId.value) {
+      await fetchAnalyticsData();
+    } else {
+      console.warn("No se pudo obtener el ID del cliente de la tabla 'clientes' a partir del auth_id del usuario logueado. No se cargarán los datos de GA.");
+      gaData.value = [];
+      isLoading.value = false;
+    }
+
   } catch (error) {
-    console.error('Error al cargar nombre:', error)
-    clientName.value = 'Usuario'
+    console.error('Error general al cargar info del cliente o GA:', error);
+    clientName.value = 'Usuario';
+    gaData.value = [];
+    isLoading.value = false;
   }
-}
+};
 
-onMounted(() => {
-  fetchClientName()
-})
 
-// KPIs
-const kpis = ref([
-  {
-    title: 'Visitas Totales',
-    value: '24,589',
-    change: '+12.5%',
-    trend: 'up',
-    progress: 85,
-    icon: UsersIcon,
-    bgColor: 'bg-blue-100 text-blue-600'
-  },
-  {
-    title: 'Conversiones',
-    value: '1,423',
-    change: '+23.1%',
-    trend: 'up',
-    progress: 92,
-    icon: ShoppingCartIcon,
-    bgColor: 'bg-green-100 text-green-600'
-  },
-  {
-    title: 'Ingresos',
-    value: '$28,950',
-    change: '+18.7%',
-    trend: 'up',
-    progress: 78,
-    icon: DollarSignIcon,
-    bgColor: 'bg-purple-100 text-purple-600'
-  },
-  {
-    title: 'Posición Media SEO',
-    value: '#4.2',
-    change: '+1.5',
-    trend: 'up',
-    progress: 65,
-    icon: SearchIcon,
-    bgColor: 'bg-amber-100 text-amber-600'
+// Función para obtener los datos de Google Analytics (ahora usa clientGaId)
+const fetchAnalyticsData = async () => {
+  isLoading.value = true; // Mantener isLoading en true mientras se cargan los datos de GA
+  try {
+    if (!clientGaId.value) {
+      console.warn("Client ID no disponible, no se pueden cargar datos de GA.");
+      gaData.value = [];
+      isLoading.value = false;
+      return;
+    }
+
+    const { startDate, endDate } = getDateRange(timeRange.value);
+
+    console.log(`Consultando ga_metrics_cache para cliente_id: ${clientGaId.value} entre ${startDate} y ${endDate}`);
+
+    const { data, error } = await supabase
+      .from('ga_metrics_cache')
+      .select('date, sessions, users, conversions, bounce_rate, avg_session_duration, page_views') // Columnas en ga_metrics_cache
+      .eq('cliente_id', clientGaId.value) // Usa el ID del cliente aquí (el UUID de la tabla 'clientes')
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .order('date', { ascending: true });
+
+    if (error) throw error;
+    gaData.value = data;
+    console.log("Datos de GA cargados:", gaData.value.length, "registros.");
+  } catch (error) {
+    console.error('Error al cargar datos de Google Analytics:', error);
+    gaData.value = [];
+  } finally {
+    isLoading.value = false;
   }
-])
+};
 
-// Datos de las gráficas
-const visitChartData = {
-  labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
-  datasets: [
-    {
-      label: 'Visitas',
-      data: [18000, 22000, 19000, 24000, 23000, 24589],
-      borderColor: '#92d000',
-      backgroundColor: 'rgba(146, 208, 0, 0.1)',
-      tension: 0.4,
-      fill: true,
-      borderWidth: 2
-    }
-  ]
-}
+// Computed properties (calculan a partir de gaData)
+const totalSessions = computed(() => {
+  return gaData.value.reduce((sum, row) => sum + (row.sessions || 0), 0);
+});
 
-const conversionChartData = {
-  labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
-  datasets: [
+const totalActiveUsers = computed(() => {
+  return gaData.value.reduce((sum, row) => sum + (row.users || 0), 0);
+});
+
+const totalConversions = computed(() => {
+  return gaData.value.reduce((sum, row) => sum + (row.conversions || 0), 0);
+});
+
+const averageBounceRate = computed(() => {
+  const totalBounceRate = gaData.value.reduce((sum, row) => sum + (row.bounce_rate || 0), 0);
+  return gaData.value.length > 0 ? (totalBounceRate / gaData.value.length).toFixed(2) : '0.00';
+});
+
+const averageSessionDuration = computed(() => {
+  const totalDuration = gaData.value.reduce((sum, row) => sum + (row.avg_session_duration || 0), 0);
+  const totalSessionsCount = totalSessions.value;
+  if (totalSessionsCount === 0 || totalDuration === 0) return '00:00';
+
+  const averageSeconds = totalDuration / totalSessionsCount;
+  const minutes = Math.floor(averageSeconds / 60);
+  const seconds = Math.floor(averageSeconds % 60);
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+});
+
+const totalPageViews = computed(() => {
+    return gaData.value.reduce((sum, row) => sum + (row.page_views || 0), 0);
+});
+
+
+const kpisData = computed(() => {
+  return [
     {
-      label: 'Conversiones',
-      data: [850, 920, 1100, 1050, 1350, 1423],
-      backgroundColor: '#fe7529',
-      borderRadius: 4,
-      borderWidth: 0
+      title: 'Visitas Totales (Sesiones)',
+      value: totalSessions.value.toLocaleString(),
+      change: null,
+      trend: 'up',
+      progress: 85,
+      icon: UsersIcon,
+      bgColor: 'bg-blue-100 text-blue-600'
+    },
+    {
+      title: 'Usuarios Activos',
+      value: totalActiveUsers.value.toLocaleString(),
+      change: null,
+      trend: 'up',
+      progress: 90,
+      icon: UsersIcon,
+      bgColor: 'bg-indigo-100 text-indigo-600'
+    },
+    {
+      title: 'Conversiones',
+      value: totalConversions.value.toLocaleString(),
+      change: null,
+      trend: 'up',
+      progress: 92,
+      icon: ShoppingCartIcon,
+      bgColor: 'bg-green-100 text-green-600'
+    },
+    {
+      title: 'Tasa de Rebote Promedio',
+      value: `${averageBounceRate.value}%`,
+      change: null,
+      trend: 'down',
+      progress: 70,
+      icon: BarChart2Icon,
+      bgColor: 'bg-red-100 text-red-600'
+    },
+    {
+      title: 'Duración Sesión Promedio',
+      value: averageSessionDuration.value,
+      change: null,
+      trend: 'up',
+      progress: 75,
+      icon: BarChart2Icon,
+      bgColor: 'bg-purple-100 text-purple-600'
+    },
+    {
+      title: 'Vistas de Página',
+      value: totalPageViews.value.toLocaleString(),
+      change: null,
+      trend: 'up',
+      progress: 88,
+      icon: BarChart2Icon,
+      bgColor: 'bg-orange-100 text-orange-600'
     }
-  ]
-}
+  ];
+});
+
+// Datos de las gráficas (sin cambios)
+const visitChartData = computed(() => {
+  const sortedData = [...gaData.value].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const labels = sortedData.map(row => new Date(row.date).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }));
+  const data = sortedData.map(row => row.sessions || 0);
+
+  return {
+    labels: labels,
+    datasets: [
+      {
+        label: 'Visitas (Sesiones)',
+        data: data,
+        borderColor: '#92d000',
+        backgroundColor: 'rgba(146, 208, 0, 0.1)',
+        tension: 0.4,
+        fill: true,
+        borderWidth: 2
+      }
+    ]
+  };
+});
+
+const conversionChartData = computed(() => {
+  const sortedData = [...gaData.value].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const labels = sortedData.map(row => new Date(row.date).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }));
+  const data = sortedData.map(row => row.conversions || 0);
+
+  return {
+    labels: labels,
+    datasets: [
+      {
+        label: 'Conversiones',
+        data: data,
+        backgroundColor: '#fe7529',
+        borderRadius: 4,
+        borderWidth: 0
+      }
+    ]
+  };
+});
 
 const chartOptions = {
   responsive: true,
@@ -366,7 +546,7 @@ const chartOptions = {
   }
 }
 
-// Datos SEO
+// Datos SEO (sin cambios, solo datos dummy)
 const seoKeywords = ref([
   {
     term: 'Agencia de marketing digital en Puebla',
@@ -400,7 +580,7 @@ const seoKeywords = ref([
   }
 ])
 
-// Campañas
+// Campañas (sin cambios, solo datos dummy)
 const campaigns = ref([
   {
     id: 1,
@@ -436,14 +616,13 @@ const campaigns = ref([
   }
 ])
 
-// Métodos
-const refreshData = () => {
-  // Aquí iría la lógica para actualizar todos los datos
-  console.log('Actualizando datos...')
-}
+// Métodos (sin cambios, solo se llama a fetchClientInfo que es la que se modificó)
+const refreshData = async () => {
+  console.log('Actualizando todos los datos...');
+  await fetchClientInfo();
+};
 
 const refreshSEOData = () => {
-  // Simular actualización de datos SEO
   seoKeywords.value = seoKeywords.value.map(keyword => ({
     ...keyword,
     lastUpdate: new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }),
@@ -452,12 +631,19 @@ const refreshSEOData = () => {
   }))
 }
 
-const getInitials = (name) => {
-  return name.split(' ').map(part => part[0]).join('').toUpperCase()
-}
+// --- Lifecycle Hook ---
+onMounted(async () => {
+  await fetchClientInfo();
+});
+
+// --- Watchers ---
+watch(timeRange, () => {
+  fetchAnalyticsData();
+});
 </script>
 
 <style scoped>
+/* Tu CSS existente sin cambios */
 .dashboard-layout {
   min-height: 100vh;
   background-color: #1e1e1e;
@@ -497,6 +683,12 @@ const getInitials = (name) => {
   color: #ffffff;
 }
 
+.welcome-subtitle {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+}
+
+
 .header-actions {
   display: flex;
   align-items: center;
@@ -514,6 +706,7 @@ const getInitials = (name) => {
   border-radius: 0.75rem;
   font-weight: 500;
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .refresh-btn:hover {
@@ -533,8 +726,8 @@ const getInitials = (name) => {
 }
 
 .user-name {
-  font-size: rem;
-  color: #4B5563;
+  font-size: 1rem;
+  color: #ffffff;
 }
 
 .avatar {
@@ -556,8 +749,10 @@ const getInitials = (name) => {
   margin: 0 auto;
 }
 
-/* Secciones */
 .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 2rem;
 }
 
@@ -584,9 +779,9 @@ const getInitials = (name) => {
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
   background-size: 1rem;
+  cursor: pointer;
 }
 
-/* KPIs Grid */
 .kpis-section {
   margin-bottom: 2rem;
 }
@@ -680,7 +875,6 @@ const getInitials = (name) => {
   border-radius: 0.75rem;
 }
 
-/* Charts Section */
 .charts-section {
   display: grid;
   grid-template-columns: repeat(1, 1fr);
@@ -747,10 +941,9 @@ const getInitials = (name) => {
 }
 
 .chart-container {
-  height: 300px; /* Más alto para mejor visualización */
+  height: 300px;
 }
 
-/* Data Section */
 .data-section {
   display: grid;
   grid-template-columns: repeat(1, 1fr);
@@ -787,10 +980,9 @@ const getInitials = (name) => {
 .data-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #111827;
+  color: #ffffff;
 }
 
-/* SEO Table */
 .seo-table {
   border-radius: 0.75rem;
   overflow: hidden;
@@ -806,14 +998,18 @@ const getInitials = (name) => {
   color: #ffffff;
   font-weight: 600;
   padding: 1rem 1.5rem;
+  text-align: left;
 }
 
 .seo-table td {
   padding: 1rem 1.5rem;
   color: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.seo-table tr:last-child td {
+  border-bottom: none;
 }
 
-/* Mejoras en las campañas */
 .campaigns-list {
   display: flex;
   flex-direction: column;
@@ -890,15 +1086,22 @@ const getInitials = (name) => {
   color: #6B7280;
 }
 
-.roi-value {
-  font-weight: 600;
-}
-
 .roi-value.positive {
   color: #92d000;
 }
 
 .roi-value.negative {
   color: #fe7529;
+}
+
+.loading-message, .no-data-message, .chart-placeholder {
+  text-align: center;
+  padding: 2rem;
+  background-color: #2a2a2a;
+  border: 1px solid rgba(146, 208, 0, 0.1);
+  border-radius: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+  margin-bottom: 1.5rem;
 }
 </style>
