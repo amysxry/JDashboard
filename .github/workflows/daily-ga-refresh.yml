@@ -1,0 +1,38 @@
+name: Daily GA Data Refresh
+
+on:
+  schedule:
+    # Ejecutar todos los días a las 3:30 AM UTC
+    # (Esto es 8:30 PM PDT del día anterior en Tijuana.
+    # Puedes ajustar la hora UTC si prefieres otra hora PDT para la ejecución.)
+    # Consulta https://crontab.guru/ para probar expresiones cron.
+    - cron: '30 3 * * *'
+  workflow_dispatch: # Permite ejecutar manualmente desde la interfaz de GitHub Actions
+
+jobs:
+  invoke_function:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Function URL
+        id: get_url
+        run: |
+          # Esto obtiene la URL de la función desplegada.
+          # Necesitarás tu SUPABASE_PROJECT_REF aquí.
+          # Puedes encontrar tu PROJECT_REF en la URL de tu panel de Supabase:
+          # https://app.supabase.com/project/YOUR_PROJECT_REF/dashboard
+          PROJECT_REF="${{ secrets.SUPABASE_PROJECT_REF }}"
+          FUNCTION_SLUG="fetch-google-analytics-data" # El nombre de tu función
+
+          FUNCTION_URL="https://${PROJECT_REF}.supabase.co/functions/v1/${FUNCTION_SLUG}"
+          echo "FUNCTION_URL=${FUNCTION_URL}" >> $GITHUB_ENV # Guarda la URL como variable de entorno
+        env:
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }} # Asegúrate de crear este secreto de GitHub
+
+      - name: Invoke Supabase Edge Function
+        run: |
+          # Usa curl para hacer una solicitud POST a tu Edge Function
+          # Incluimos el secreto en los headers
+          curl -X POST \
+          -H "Content-Type: application/json" \
+          -H "x-invoke-secret: ${{ secrets.SUPABASE_FUNCTION_INVOKE_SECRET }}" \
+          ${{ env.FUNCTION_URL }}
