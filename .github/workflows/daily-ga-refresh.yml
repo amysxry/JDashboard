@@ -31,8 +31,7 @@ jobs:
       - name: Invoke Supabase Edge Function
         run: |
           # Usa curl para hacer una solicitud POST a tu Edge Function
-          # Incluimos el secreto en los headers
+          # Ya no incluimos el secreto en los headers
           curl -X POST \
           -H "Content-Type: application/json" \
-          -H "x-invoke-secret: ${{ secrets.SUPABASE_FUNCTION_INVOKE_SECRET }}" \
           ${{ env.FUNCTION_URL }}
