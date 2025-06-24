@@ -84,26 +84,17 @@ serve(async (req)=>{
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-  // --- NUEVA LÓGICA DE SEGURIDAD: Secreto de invocación para proteger la función ---
-  const FUNCTION_INVOKE_SECRET = Deno.env.get('FUNCTION_INVOKE_SECRET');
-  // --- FIN NUEVA LÓGICA DE SEGURIDAD ---
-
   // --- Verificación inicial de todas las variables de entorno necesarias ---
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !Deno.env.get('GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL') || !Deno.env.get('GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY') || !FUNCTION_INVOKE_SECRET) {
-    return new Response('Configuración incompleta: Variables de entorno de Supabase, cuenta de servicio o secreto de invocación faltan.', {
+  // Se ha eliminado la verificación de FUNCTION_INVOKE_SECRET aquí.
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !Deno.env.get('GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL') || !Deno.env.get('GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY')) {
+    return new Response('Configuración incompleta: Variables de entorno de Supabase o cuenta de servicio faltan.', {
       status: 500
     });
   }
 
-  // --- Lógica de SEGURIDAD: Verifica el header 'x-invoke-secret' en la solicitud ---
-  const requestHeaders = Object.fromEntries(req.headers.entries());
-  if (requestHeaders['x-invoke-secret'] !== FUNCTION_INVOKE_SECRET) {
-      console.error('Intento de invocación no autorizado a fetch-google-analytics-data. Header x-invoke-secret incorrecto o ausente.');
-      return new Response('No autorizado.', { status: 401 });
-  }
-  // --- FIN Lógica de SEGURIDAD ---
-
-
+  // --- Lógica de SEGURIDAD: Se ha ELIMINADO la verificación del header 'x-invoke-secret'. ---
+  // La función ya no requerirá este secreto para ser invocada.
+  
   // --- Inicializa el cliente Supabase con el Service Role Key (permisos de administrador) ---
   const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: {
