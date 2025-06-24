@@ -133,7 +133,14 @@
                 <HelpCircle class="h-4 w-4 text-gray-400 hover:text-gray-200 transition-colors cursor-help" />
               </div>
             </div>
-            <div class="seo-table">
+            <div v-if="isLoading" class="loading-message">Cargando datos de SEO...</div>
+            <div v-else-if="!clientGaId" class="no-data-message">
+              No se pudo obtener el ID del cliente para cargar los datos de SEO.
+            </div>
+            <div v-else-if="seoKeywords.length === 0" class="no-data-message">
+              No hay datos de posicionamiento SEO disponibles para este cliente.
+            </div>
+            <div v-else class="seo-table">
               <table>
                 <thead>
                   <tr>
@@ -173,7 +180,7 @@
                 </tbody>
               </table>
             </div>
-          </div>
+            </div>
 
           <div class="data-card">
             <div class="data-header">
@@ -240,7 +247,8 @@
 import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { supabase } from '@/lib/supabaseClient'
 import { Line, Bar } from 'vue-chartjs'
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend } from 'chart.js'
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler } from 'chart.js'
+//                                                                                                                              ^-- ¡Asegúrate de que 'Filler' esté aquí!
 import {
   ArrowUpIcon,
   ArrowDownIcon,
@@ -262,7 +270,8 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 )
 
 // Estado
@@ -345,6 +354,7 @@ const fetchClientInfo = async () => {
       console.error('Error al obtener usuario autenticado:', userError);
       clientName.value = 'Usuario';
       gaData.value = [];
+      seoKeywords.value = []; // Limpia también los datos de SEO
       isLoading.value = false;
       return;
     }
@@ -361,6 +371,7 @@ const fetchClientInfo = async () => {
       console.error('Error al cargar información del cliente desde tabla "clientes" (puede ser por RLS o no hay un cliente vinculado al auth_id):', clientError);
       clientName.value = 'Usuario';
       gaData.value = [];
+      seoKeywords.value = []; // Limpia también los datos de SEO
       isLoading.value = false;
       return;
     } else {
@@ -374,17 +385,27 @@ const fetchClientInfo = async () => {
 
     if (clientGaId.value) {
       await fetchAnalyticsData();
+      await fetchSeoData(); // ¡Aquí se llama a la nueva función de SEO!
     } else {
-      console.warn("No se pudo obtener el ID del cliente de la tabla 'clientes' a partir del auth_id del usuario logueado. No se cargarán los datos de GA.");
+      console.warn("No se pudo obtener el ID del cliente de la tabla 'clientes' a partir del auth_id del usuario logueado. No se cargarán los datos de GA ni SEO.");
       gaData.value = [];
+      seoKeywords.value = []; // Limpia también los datos de SEO
       isLoading.value = false;
     }
 
   } catch (error) {
-    console.error('Error general al cargar info del cliente o GA:', error);
+    console.error('Error general al cargar info del cliente, GA o SEO:', error);
     clientName.value = 'Usuario';
     gaData.value = [];
+    seoKeywords.value = []; // Limpia también los datos de SEO en caso de cualquier error
     isLoading.value = false;
+  } finally {
+    // Es importante asegurar que isLoading.value se ponga en false
+    // al final de todo el proceso de carga, independientemente del éxito o error.
+    // Esto es especialmente relevante si en un futuro añades más llamadas asíncronas aquí.
+    if (isLoading.value) { // Solo si no se ha puesto en false antes por un return temprano
+       isLoading.value = false;
+    }
   }
 };
 
@@ -421,6 +442,58 @@ const fetchAnalyticsData = async () => {
     isLoading.value = false;
   }
 };
+
+const fetchSeoData = async () => {
+  isLoading.value = true;
+  seoKeywords.value = [];
+
+  try {
+    if (!clientGaId.value) {
+      console.warn("Client ID no disponible, no se pueden cargar datos de SEO.");
+      seoKeywords.value = [];
+      isLoading.value = false;
+      return;
+    }
+
+    console.log(`Consultando seo_rankings y monitored_keywords para cliente_id: ${clientGaId.value}`);
+
+    const { data, error } = await supabase
+      .from('seo_rankings')
+      // CAMBIO CLAVE AQUÍ: Eliminamos 'url' del select
+      .select('keyword_id,position,previous_position,created_at,monitored_keywords(keyword)')
+      .eq('cliente_id', clientGaId.value)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const latestKeywords = {};
+    data.forEach(row => {
+      const keywordText = row.monitored_keywords?.keyword;
+      if (keywordText && !latestKeywords[keywordText]) {
+        latestKeywords[keywordText] = {
+          term: keywordText,
+          position: row.position,
+          change: row.previous_position !== null ? (row.previous_position - row.position) : 0,
+          lastUpdate: row.created_at ? new Date(row.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'
+        };
+      }
+    });
+
+    seoKeywords.value = Object.values(latestKeywords);
+    console.log("Datos de SEO cargados:", seoKeywords.value.length, "registros.");
+
+    if (seoKeywords.value.length === 0) {
+      console.warn("No hay datos de posicionamiento SEO disponibles para este cliente en la base de datos.");
+    }
+
+  } catch (error) {
+    console.error('Error al cargar datos de SEO desde Supabase:', error);
+    seoKeywords.value = [];
+  } finally {
+    isLoading.value = false;
+  }
+};
+
 
 const totalSessions = computed(() => {
   return gaData.value.reduce((sum, row) => sum + (row.sessions || 0), 0);
@@ -584,38 +657,7 @@ const chartOptions = {
   }
 }
 
-const seoKeywords = ref([
-  {
-    term: 'Agencia de marketing digital en Puebla',
-    position: 4,
-    change: 2,
-    lastUpdate: '03 Jun 2025'
-  },
-  {
-    term: 'Agencia SEO Puebla',
-    position: 3,
-    change: 1,
-    lastUpdate: '03 Jun 2025'
-  },
-  {
-    term: 'Marketing digital empresas Puebla',
-    position: 8,
-    change: -1,
-    lastUpdate: '03 Jun 2025'
-  },
-  {
-    term: 'Publicidad en Google Puebla',
-    position: 12,
-    change: 3,
-    lastUpdate: '03 Jun 2025'
-  },
-  {
-    term: 'Diseño web profesional Puebla',
-    position: 5,
-    change: 0,
-    lastUpdate: '03 Jun 2025'
-  }
-])
+const seoKeywords = ref([]);
 
 const campaigns = ref([
   {
