@@ -159,7 +159,7 @@ serve(async (req)=>{
             { name: 'date' } // Queremos los datos desglosados por fecha
           ],
           dateRanges: [
-            { startDate: '30daysAgo', endDate: 'today' } // Rango de fechas: últimos 30 días hasta hoy
+            { startDate: '7daysAgo', endDate: 'today' } // Rango de fechas: últimos 7 días hasta hoy (cambiado de 30)
           ]
         };
 

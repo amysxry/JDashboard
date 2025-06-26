@@ -21,7 +21,10 @@
             <div class="user-profile">
               <span class="user-name">{{ clientName }}</span>
               <div class="avatar">
-                <span class="initials">{{ getInitials(clientName) }}</span>
+                <template v-if="profilePhotoUrl">
+                  <img :src="profilePhotoUrl" alt="Avatar de perfil" class="profile-photo">
+                </template>
+                <template v-else><span class="initials">{{ getInitials(clientName) }}</span></template>
               </div>
             </div>
           </div>
@@ -274,6 +277,8 @@ ChartJS.register(
   Filler
 )
 
+const profilePhotoUrl = ref(''); // Nueva ref para la URL de la foto de perfil
+
 // Estado
 const isSidebarCollapsed = ref(true)
 const clientName = ref('Cargando...')
@@ -363,7 +368,7 @@ const fetchClientInfo = async () => {
     // Modificado para también obtener el saldo
     const { data: clientData, error: clientError } = await supabase
       .from('clientes')
-      .select('id, empresa, saldo') // Incluir 'saldo'
+      .select('id, empresa, saldo, avatar_url') // Incluir 'saldo'
       .eq('auth_id', user.id)
       .single();
 
@@ -377,10 +382,12 @@ const fetchClientInfo = async () => {
     } else {
       clientName.value = clientData?.empresa || 'Usuario';
       clientGaId.value = clientData?.id;
-      clientBalance.value = clientData?.saldo || 0; // Asignar el saldo, por defecto 0 si es nulo
+      clientBalance.value = clientData?.saldo || 0; 
+      profilePhotoUrl.value = clientData?.avatar_url || '';
       console.log("Nombre del cliente (empresa):", clientName.value);
       console.log("ID del cliente (UUID de la tabla clientes):", clientGaId.value);
       console.log("Saldo del cliente:", clientBalance.value);
+      console.log("Client Profile Photo URL:", profilePhotoUrl.value);
     }
 
     if (clientGaId.value) {
