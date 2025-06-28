@@ -1,3 +1,5 @@
+/* style.css */
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -11,6 +13,16 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Define variables CSS para colores del tema */
+  --bg-dark: #1e1e1e; /* Fondo principal oscuro */
+  --card-bg: #2a2a2a; /* Fondo para tarjetas y secciones */
+  --border-color: #3b3b3b; /* Color de bordes */
+  --text-primary: #ffffff; /* Texto principal */
+  --text-secondary: #aaa; /* Texto secundario/descriptivo */
+  --accent-green: #92d000; /* Verde de acento */
+  --accent-orange: #fe7529; /* Naranja de acento */
+  --error-color: #ff6b6b; /* Color de error */
 }
 
 a {
@@ -24,10 +36,14 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
+  /* `display: flex; place-items: center;` en body puede interferir si no se maneja bien */
+  /* Para dashboards de ancho completo, a menudo body es 100% y el #app o contenedor principal maneja el flex */
+  /* Lo ideal es que body no limite el ancho, y #app se encargue del layout flex */
+  min-width: 100%; /* Asegúrate de que el body ocupe todo el ancho */
   min-height: 100vh;
+  display: flex; /* Mantener flex en body si #app es el único hijo para que ocupe 100% de alto */
+  flex-direction: column; /* Asegura que el contenido se apila si hay varios elementos */
+  /* align-items: stretch; */ /* Remueve place-items: center para que el #app no se centre y ocupe todo el ancho */
 }
 
 h1 {
@@ -59,10 +75,15 @@ button:focus-visible {
 }
 
 #app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  /* ¡¡¡ESTO ES LO QUE ESTABA CAUSANDO EL PROBLEMA!!! */
+  /* max-width: 1280px; */ /* REMOVER */
+  /* margin: 0 auto; */ /* REMOVER */
+  /* padding: 2rem; */ /* REMOVER - El padding lo manejaremos dentro de los componentes de layout */
+  width: 100%; /* Aseguramos que #app ocupe todo el ancho disponible del body */
+  min-height: 100vh; /* Aseguramos que #app ocupe al menos el alto de la vista */
+  display: flex; /* Si sidebar y main-content son hijos directos de #app o de un contenedor dentro de #app */
+  flex-direction: column; /* Por defecto, apila los hijos verticalmente */
+  /* Si tu analytics-layout es el único hijo de #app y ya es flex, entonces #app no necesita flex */
 }
 
 @media (prefers-color-scheme: light) {
