@@ -13,8 +13,6 @@
         </div>
         <div class="header-actions">
           <div class="info-tooltip">
-            <HelpCircle class="h-5 w-5" />
-            <span class="tooltip-text">Selecciona el rango de tiempo para los datos</span>
             <select v-model="timeRange" @change="refreshData" class="time-select">
               <option value="7d">Últimos 7 días</option>
               <option value="14d">Últimos 14 días</option>
@@ -884,7 +882,7 @@ watch(timeRange, () => {
 
 .header-actions {
   display: flex;
-  gap: 1rem;
+  gap: 1.5rem;
   align-items: center;
 }
 

@@ -17,7 +17,7 @@
     <button
       :class="[
         'fixed top-4 z-30 text-white p-2 rounded-lg hover:bg-white/10 transition-colors',
-        isMobile ? 'right-4' : 'right-4 lg:right-auto lg:left-[calc(320px+1rem)]' // Ajustar posición en desktop
+        isMobile ? 'right-4' : 'right-4 lg:right-auto lg:left-[calc(380px+1rem)]'
       ]"
     >
       <Bell class="h-6 w-6" />
@@ -29,24 +29,30 @@
         'sidebar',
         {
           'sidebar-collapsed': isCollapsed && !isMobile,
-          'sidebar-open-mobile': isMobile && isOpen, // Nueva clase para controlar apertura en móvil
-          'sidebar-closed-mobile': isMobile && !isOpen, // Nueva clase para controlar cierre en móvil
-          'lg:translate-x-0': !isMobile // En desktop, siempre visible (no translate)
+          'sidebar-open-mobile': isMobile && isOpen,
+          'sidebar-closed-mobile': isMobile && !isOpen,
+          'lg:translate-x-0': !isMobile
         }
       ]"
     >
       <div class="sidebar-header">
-        <img
-          src="@/assets/Logo-JDigital-black.png"
-          :class="['logo', { 'logo-small': isCollapsed && !isMobile }]"
-          alt="JDigital"
-        >
-        <button @click="toggleCollapse" class="collapse-btn hidden lg:flex">
-          <ChevronLeft v-if="!isCollapsed" />
-          <ChevronRight v-else />
-        </button>
-      </div>
+        <template v-if="!isCollapsed">
+          <img
+            src="@/assets/Logo-JDigital-black.png"
+            class="logo"
+            alt="JDigital"
+          >
+          <button @click="toggleCollapse" class="collapse-btn hidden lg:flex">
+            <ChevronLeft />
+          </button>
+        </template>
 
+        <template v-else>
+          <button @click="toggleCollapse" class="collapse-btn hidden lg:flex mx-auto">
+            <Menu class="h-6 w-6" />
+          </button>
+        </template>
+      </div>
       <nav class="sidebar-nav">
         <ul>
           <li>
@@ -98,6 +104,7 @@
 </template>
 
 <script setup>
+// El script no necesita cambios, la lógica de 'isCollapsed' ya funciona.
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import {
@@ -109,177 +116,137 @@ import {
   FileText,
   Settings,
   ChevronLeft,
-  ChevronRight,
+  ChevronRight, // Ya no se usa, pero lo dejamos por si acaso
   Bell,
   Menu
 } from 'lucide-vue-next'
 
 const route = useRoute()
-const sidebarRef = ref(null)
 const isCollapsed = ref(false)
-const isOpen = ref(false) // Controla si el sidebar móvil está abierto
-const isMobile = ref(false) // Controla si la pantalla es móvil
+const isOpen = ref(false)
+const isMobile = ref(false)
 
 const currentRoute = computed(() => route.path)
 
-// Función para verificar el tamaño de la pantalla
 const checkScreenSize = () => {
   isMobile.value = window.innerWidth < 1024
-  // En móvil, el sidebar inicia cerrado por defecto
   if (isMobile.value) {
     isOpen.value = false
   } else {
-    // En desktop, el sidebar está siempre "abierto" (visible)
     isOpen.value = true
   }
 }
 
-// Alterna el estado de colapso solo en desktop
 const toggleCollapse = () => {
   if (!isMobile.value) {
     isCollapsed.value = !isCollapsed.value
-    // Emitir un evento para notificar al componente padre (GA4.vue)
-    // sobre el cambio de ancho del sidebar
     window.dispatchEvent(new CustomEvent('sidebar-width-changed', {
       detail: {
-        width: isCollapsed.value ? 80 : 30 // Ancho colapsado vs. normal (Adjusted to 320px)
+        width: isCollapsed.value ? 80 : 380
       }
     }));
   }
 }
 
-// Alterna la apertura/cierre del sidebar en móvil
 const toggleSidebar = () => {
   isOpen.value = !isOpen.value
 }
 
-// Cierra el sidebar solo si está en modo móvil
 const closeSidebar = () => {
   if (isMobile.value) {
     isOpen.value = false
   }
 }
 
-// Montar y desmontar listeners para el cambio de tamaño de pantalla
 onMounted(() => {
   checkScreenSize()
   window.addEventListener('resize', checkScreenSize)
+  window.dispatchEvent(new CustomEvent('sidebar-width-changed', {
+    detail: {
+      width: isCollapsed.value ? 80 : 380
+    }
+  }));
 });
 
 onUnmounted(() => {
   window.removeEventListener('resize', checkScreenSize)
 });
 
-// Observar cambios en la ruta para cerrar el sidebar móvil
 watch(currentRoute, () => {
   closeSidebar();
 });
 </script>
 
 <style scoped>
-/* Variables para anchos del sidebar */
-:root {
-  --sidebar-width: 350px; /* Increased from 280px to 320px */
-  --sidebar-collapsed-width: 80px;
-}
+/* Las variables de ancho ahora están en tu style.css global */
 
 .sidebar {
-  width: var(--sidebar-width); /* Ancho por defecto */
+  width: var(--sidebar-width);
   background-color: #1e1e1e;
-  height: 100vh; /* Ocupa todo el alto de la vista */
-  position: fixed; /* Esto lo saca del flujo normal */
+  height: 100vh;
+  position: fixed;
   top: 0;
   left: 0;
   display: flex;
   flex-direction: column;
   transition: transform 0.3s ease, width 0.3s ease;
   border-right: 1px solid rgba(255, 255, 255, 0.1);
-  z-index: 30; /* Asegura que esté por encima del contenido */
-  box-sizing: border-box; /* Incluye padding y border en el width */
+  z-index: 30;
+  box-sizing: border-box;
 }
 
 .sidebar-collapsed {
-  width: var(--sidebar-collapsed-width); /* Ancho cuando está colapsado */
+  width: var(--sidebar-collapsed-width);
 }
 
-/* Manejo del sidebar en móviles */
-@media (max-width: 1023px) { /* Usamos 1023px para que coincida con el `isMobile < 1024` */
+@media (max-width: 1023px) {
   .sidebar {
-    width: var(--sidebar-width); /* En móvil, siempre tiene el ancho completo cuando está visible */
-    transform: translateX(-100%); /* Por defecto, oculto */
+    width: var(--sidebar-width);
+    transform: translateX(-100%);
   }
-
   .sidebar-open-mobile {
-    transform: translateX(0); /* Visible */
+    transform: translateX(0);
   }
-
   .sidebar-closed-mobile {
-    transform: translateX(-100%); /* Oculto */
+    transform: translateX(-100%);
   }
-
-  /* Asegurarse de que el sidebar-collapsed no aplique en móvil */
   .sidebar-collapsed {
-    width: var(--sidebar-width); /* Ancho completo incluso si la variable de colapso es true en js */
+    width: var(--sidebar-width);
   }
-
-  /* Botón de notificaciones en móvil: siempre a la derecha del todo */
   .fixed.top-4.right-4 {
-    left: auto !important; /* Desactiva la regla de desktop si se aplicó */
-    right: 1rem; /* Margen a la derecha */
+    left: auto !important;
+    right: 1rem;
   }
 }
 
-/* Estilos para desktop */
 @media (min-width: 1024px) {
   .sidebar {
-    transform: translateX(0); /* Siempre visible en desktop */
-  }
-  /* Asegura que el botón de notificaciones se posicione a la derecha del sidebar cuando NO está colapsado */
-  .fixed.top-4.lg\:right-auto.lg\:left-\[calc\(280px\+1rem\)\] {
-      left: calc(var(--sidebar-width) + 1rem); /* 320px + 16px (1rem) */ /* Adjusted from 280px to 320px */
-      right: auto;
-  }
-  .sidebar-collapsed ~ .fixed.top-4.lg\:right-auto.lg\:left-\[calc\(280px\+1rem\)\] {
-      left: calc(var(--sidebar-collapsed-width) + 1rem); /* 80px + 16px (1rem) */
+    transform: translateX(0);
   }
 }
 
 .sidebar-header {
   display: flex;
   align-items: center;
+  /* Justifica al centro cuando está colapsado, y entre los extremos cuando está expandido */
   justify-content: space-between;
   padding: 1.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  height: 73px; /* Altura fija para evitar saltos de layout */
+  box-sizing: border-box;
+}
+
+.sidebar-collapsed .sidebar-header {
+    justify-content: center;
 }
 
 .logo {
   height: 40px;
   filter: brightness(0) invert(1);
   transition: all 0.3s ease;
-  /* Ocultar texto o ajustar si se colapsa */
-  opacity: 1;
-  visibility: visible;
 }
 
-.sidebar-collapsed .logo:not(.logo-small) {
-  opacity: 0;
-  visibility: hidden;
-  width: 0; /* Oculta completamente */
-  margin-left: -100%; /* Desplaza fuera de vista */
-}
-
-.logo-small {
-  height: 30px;
-  width: auto; /* Asegura que la imagen no se distorsione */
-}
-/* Cuando el sidebar está colapsado, el logo se reduce pero sigue siendo visible si no está oculto */
-.sidebar-collapsed .logo.logo-small {
-    height: 30px;
-    opacity: 1;
-    visibility: visible;
-    margin-left: 0;
-    max-width: 100%; /* Asegura que la imagen se ajuste dentro del ancho colapsado */
-}
+/* LIMPIEZA: Se eliminan las reglas de .logo-small que ya no son necesarias */
 
 .collapse-btn {
   background: transparent;
@@ -298,18 +265,17 @@ watch(currentRoute, () => {
   background: rgba(255, 255, 255, 0.1);
 }
 
+/* El resto del CSS se mantiene igual */
 .sidebar-nav {
   flex: 1;
   padding: 1rem;
-  overflow-y: auto; /* Permite scroll si hay muchos elementos */
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  overflow-y: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
-/* Ocultar scrollbar para webkit */
 .sidebar-nav::-webkit-scrollbar {
   display: none;
 }
-
 .sidebar-nav ul {
   list-style: none;
   padding: 0;
@@ -318,7 +284,6 @@ watch(currentRoute, () => {
   flex-direction: column;
   height: 100%;
 }
-
 .nav-link {
   display: flex;
   align-items: center;
@@ -330,51 +295,40 @@ watch(currentRoute, () => {
   transition: all 0.2s ease;
   margin-bottom: 0.5rem;
 }
-
 .nav-link:hover {
   background: rgba(146, 208, 0, 0.1);
   color: #ffffff;
 }
-
 .nav-link.active {
   background: #92d000;
-  color: #1e1e1e; /* Texto oscuro para enlace activo */
+  color: #1e1e1e;
   font-weight: 600;
 }
-.nav-link.active .icon { /* Icono oscuro para enlace activo */
+.nav-link.active .icon {
     color: #1e1e1e;
 }
-
-
 .nav-link .icon {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-  color: inherit; /* Permite que el color del icono sea controlado por el color del enlace */
+  color: inherit;
 }
-
 .nav-link span {
   font-size: 0.9375rem;
   white-space: nowrap;
   opacity: 1;
   transition: opacity 0.3s ease;
 }
-
-.sidebar-collapsed .nav-link span:not(.no-hide) { /* Oculta texto al colapsar, excepto si tienen 'no-hide' */
+.sidebar-collapsed .nav-link span:not(.no-hide) {
   opacity: 0;
   width: 0;
   overflow: hidden;
-  display: none; /* Asegura que no ocupe espacio */
+  display: none;
 }
-
 .mt-auto {
   margin-top: auto;
 }
-
-/* Estilos para el botón de hamburguesa y notificaciones */
-.fixed.top-4.left-4 {
-    z-index: 50; /* Más alto que el overlay */
-}
+.fixed.top-4.left-4,
 .fixed.top-4.right-4 {
     z-index: 50;
 }
