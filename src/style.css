@@ -1,106 +1,71 @@
 /* style.css */
 
+/* 1. Definición de Variables Globales (Paleta y Tipografía) */
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  /* Paleta de Colores de JDigital */
+  --color-bg-dark: #1e1e1e;
+  --color-bg-accent: #2a2a2a;
+  --color-primary: #92d000;
+  --color-primary-dark: #5a7d16;
+  --color-secondary: #fe7529;
+  --color-text-primary: #f0f0f0;
+  --color-text-secondary: #a0aec0;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-error: #e53e3e;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  /* --- CAMBIO AQUÍ --- */
-  /* Se añaden las variables del sidebar al :root global */
-  --sidebar-width: 280px;
-  --sidebar-collapsed-width: 80px;
-  /* --- FIN DEL CAMBIO --- */
-
-  /* Define variables CSS para colores del tema */
-  --bg-dark: #1e1e1e;
-  --card-bg: #2a2a2a;
-  --border-color: #3b3b3b;
-  --text-primary: #ffffff;
-  --text-secondary: #aaa;
-  --accent-green: #92d000;
-  --accent-orange: #fe7529;
-  --error-color: #ff6b6b;
+  /* Tipografía */
+  --font-family-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+  
+  /* Espaciado */
+  --spacing-1: 0.25rem; /* 4px */
+  --spacing-2: 0.5rem;  /* 8px */
+  --spacing-4: 1rem;   /* 16px */
+  --spacing-6: 1.5rem;  /* 24px */
+  --spacing-8: 2rem;   /* 32px */
+  
+  /* Otros */
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --transition-fast: all 0.2s ease-in-out;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+/* 2. Reseteo Básico y Estilos del Body */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  margin: 0;
-  /* `display: flex; place-items: center;` en body puede interferir si no se maneja bien */
-  /* Para dashboards de ancho completo, a menudo body es 100% y el #app o contenedor principal maneja el flex */
-  /* Lo ideal es que body no limite el ancho, y #app se encargue del layout flex */
-  min-width: 100%; /* Asegúrate de que el body ocupe todo el ancho */
+  font-family: var(--font-family-sans);
+  font-weight: var(--font-weight-normal);
+  line-height: 1.6;
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-dark);
+
+  /* Estilos para renderizado de fuentes */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+
   min-height: 100vh;
-  display: flex; /* Mantener flex en body si #app es el único hijo para que ocupe 100% de alto */
-  flex-direction: column; /* Asegura que el contenido se apila si hay varios elementos */
-  /* align-items: stretch; */ /* Remueve place-items: center para que el #app no se centre y ocupe todo el ancho */
 }
 
-h1 {
-  font-size: 2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-.card {
-  padding: 2em;
-}
-
+/* 3. Estilos Base para la App de Vue */
 #app {
-  /* ¡¡¡ESTO ES LO QUE ESTABA CAUSANDO EL PROBLEMA!!! */
-  /* max-width: 1280px; */ /* REMOVER */
-  /* margin: 0 auto; */ /* REMOVER */
-  /* padding: 2rem; */ /* REMOVER - El padding lo manejaremos dentro de los componentes de layout */
-  width: 100%; /* Aseguramos que #app ocupe todo el ancho disponible del body */
-  min-height: 100vh; /* Aseguramos que #app ocupe al menos el alto de la vista */
-  display: flex; /* Si sidebar y main-content son hijos directos de #app o de un contenedor dentro de #app */
-  flex-direction: column; /* Por defecto, apila los hijos verticalmente */
-  /* Si tu analytics-layout es el único hijo de #app y ya es flex, entonces #app no necesita flex */
+  min-height: 100vh;
+  width: 100%;
+  display: flex; /* Permite layouts flexibles como el del login */
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+/* Estilos de botones base (pueden ser sobreescritos por componentes) */
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  border-radius: var(--border-radius-md);
+  transition: var(--transition-fast);
 }

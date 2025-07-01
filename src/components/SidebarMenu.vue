@@ -46,13 +46,13 @@
             <ChevronLeft />
           </button>
         </template>
-
         <template v-else>
           <button @click="toggleCollapse" class="collapse-btn hidden lg:flex mx-auto">
             <Menu class="h-6 w-6" />
           </button>
         </template>
       </div>
+
       <nav class="sidebar-nav">
         <ul>
           <li>
@@ -91,11 +91,19 @@
               <span v-show="!isCollapsed || isMobile">Reportes</span>
             </RouterLink>
           </li>
+          
           <li class="mt-auto">
             <RouterLink to="/config" class="nav-link" :class="{ active: currentRoute === '/config' }" @click="closeSidebar">
               <Settings class="icon" />
               <span v-show="!isCollapsed || isMobile">Configuración</span>
             </RouterLink>
+          </li>
+
+          <li>
+            <button @click="handleLogout" class="nav-link logout-btn">
+              <LogOut class="icon" />
+              <span v-show="!isCollapsed || isMobile">Cerrar Sesión</span>
+            </button>
           </li>
         </ul>
       </nav>
@@ -104,9 +112,9 @@
 </template>
 
 <script setup>
-// El script no necesita cambios, la lógica de 'isCollapsed' ya funciona.
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { supabase } from '@/lib/supabaseClient'
 import {
   LayoutDashboard,
   BarChart3,
@@ -116,17 +124,29 @@ import {
   FileText,
   Settings,
   ChevronLeft,
-  ChevronRight, // Ya no se usa, pero lo dejamos por si acaso
+  ChevronRight,
   Bell,
-  Menu
+  Menu,
+  LogOut
 } from 'lucide-vue-next'
 
 const route = useRoute()
+const router = useRouter()
 const isCollapsed = ref(false)
 const isOpen = ref(false)
 const isMobile = ref(false)
 
 const currentRoute = computed(() => route.path)
+
+const handleLogout = async () => {
+  try {
+    const { error } = await supabase.auth.signOut()
+    if (error) throw error
+    router.push('/login')
+  } catch (error) {
+    console.error('Error al cerrar sesión:', error.message)
+  }
+}
 
 const checkScreenSize = () => {
   isMobile.value = window.innerWidth < 1024
@@ -158,6 +178,11 @@ const closeSidebar = () => {
   }
 }
 
+// Dummy handler para el listener que vamos a limpiar en onUnmounted
+// No es estrictamente necesario si la lógica solo está en los otros componentes,
+// pero es buena práctica tenerlo si alguna vez se añade lógica aquí.
+const handleSidebarWidthChange = () => {};
+
 onMounted(() => {
   checkScreenSize()
   window.addEventListener('resize', checkScreenSize)
@@ -170,6 +195,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', checkScreenSize)
+  window.removeEventListener('sidebar-width-changed', handleSidebarWidthChange); 
 });
 
 watch(currentRoute, () => {
@@ -178,8 +204,6 @@ watch(currentRoute, () => {
 </script>
 
 <style scoped>
-/* Las variables de ancho ahora están en tu style.css global */
-
 .sidebar {
   width: var(--sidebar-width);
   background-color: #1e1e1e;
@@ -228,11 +252,10 @@ watch(currentRoute, () => {
 .sidebar-header {
   display: flex;
   align-items: center;
-  /* Justifica al centro cuando está colapsado, y entre los extremos cuando está expandido */
   justify-content: space-between;
   padding: 1.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  height: 73px; /* Altura fija para evitar saltos de layout */
+  height: 73px;
   box-sizing: border-box;
 }
 
@@ -245,8 +268,6 @@ watch(currentRoute, () => {
   filter: brightness(0) invert(1);
   transition: all 0.3s ease;
 }
-
-/* LIMPIEZA: Se eliminan las reglas de .logo-small que ya no son necesarias */
 
 .collapse-btn {
   background: transparent;
@@ -265,7 +286,6 @@ watch(currentRoute, () => {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* El resto del CSS se mantiene igual */
 .sidebar-nav {
   flex: 1;
   padding: 1rem;
@@ -294,6 +314,8 @@ watch(currentRoute, () => {
   border-radius: 8px;
   transition: all 0.2s ease;
   margin-bottom: 0.5rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 .nav-link:hover {
   background: rgba(146, 208, 0, 0.1);
@@ -325,6 +347,19 @@ watch(currentRoute, () => {
   overflow: hidden;
   display: none;
 }
+
+.logout-btn {
+  background-color: transparent;
+  text-align: left;
+  font-size: 1em; /* Asegura que tenga el mismo tamaño de fuente que los botones base */
+  font-weight: normal; /* El peso de fuente normal para un nav-link */
+}
+
+.logout-btn:hover {
+  background: rgba(254, 117, 41, 0.1);
+  color: #fe7529;
+}
+
 .mt-auto {
   margin-top: auto;
 }

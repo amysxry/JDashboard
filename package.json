@@ -11,6 +11,7 @@
   "dependencies": {
     "@heroicons/vue": "^2.2.0",
     "@supabase/supabase-js": "^2.49.9",
+    "@vueuse/motion": "^3.0.3",
     "chart.js": "^4.4.9",
     "firebase": "^11.8.1",
     "lucide-vue-next": "^0.511.0",
