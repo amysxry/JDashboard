@@ -5,7 +5,7 @@ import GA4 from '@/views/GA4.vue'
 import Ads from '@/views/Ads.vue'
 import WordPress from '@/views/WordPress.vue'
 import Asana from '@/views/Asana.vue'
-import Configuracion from '@/views/configuracion.vue'
+import Configuracion from '@/views/Configuracion.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },

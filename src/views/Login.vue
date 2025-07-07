@@ -38,9 +38,6 @@ import { ref } from 'vue';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'vue-router';
 
-// SE HA ELIMINADO POR COMPLETO Y PARA SIEMPRE CUALQUIER IMPORT DE @vueuse/motion.
-// Esta era la causa del error. No se necesita.
-
 const email = ref('');
 const password = ref('');
 const error = ref('');
