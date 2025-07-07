@@ -14,9 +14,11 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
+import { useUserStore } from '@/stores/user'
 import SidebarMenu from '@/components/SidebarMenu.vue';
 import TopBarMenu from '@/components/TopBarMenu.vue';
 
+const userStore = useUserStore()
 const isCollapsed = ref(false);
 const isMobile = ref(false);
 const route = useRoute();
@@ -42,6 +44,7 @@ const handleSidebarToggle = (event) => {
 
 onMounted(() => {
   checkScreenSize();
+  userStore.fetchProfile();
   window.addEventListener('sidebar-toggled', handleSidebarToggle);
   window.addEventListener('resize', checkScreenSize);
 });
@@ -57,7 +60,6 @@ onUnmounted(() => {
   display: flex;
   background-color: var(--color-bg-dark);
   height: 100vh;
-  /* overflow: hidden; */ /* <--- CAMBIO: Eliminamos esta línea que causaba el corte */
 }
 
 .page-container {

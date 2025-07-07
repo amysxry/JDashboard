@@ -3,8 +3,8 @@
 /* 1. Definición de Variables Globales (Paleta y Tipografía) */
 :root {
   /* Paleta de Colores de JDigital */
-  --color-bg-dark: #1e1e1e;
-  --color-bg-accent: #2a2a2a;
+  --color-bg-dark: #161817;
+  --color-bg-accent: #161817;
   --color-primary: #92d000;
   --color-primary-dark: #5a7d16;
   --color-secondary: #fe7529;
@@ -26,14 +26,10 @@
   --spacing-6: 1.5rem;  /* 24px */
   --spacing-8: 2rem;   /* 32px */
 
-  /* CAMBIO: Añadimos las variables para las dimensiones del Layout.
-    Aquí puedes controlar el ancho del sidebar para toda la aplicación.
-  */
+  /* Dimensiones del Layout */
   --sidebar-width: 280px;
   --sidebar-collapsed-width: 100px;
-
-  --header-height: 69px; /* Usaremos esta variable para ambos headers */
-
+  --header-height: 280px; /* Usaremos esta variable para ambos headers */
   
   /* Otros */
   --border-radius-md: 8px;
@@ -46,6 +42,11 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+/* CAMBIO: Se añade para prevenir el scrollbar principal que causa el espacio a la derecha */
+html, body {
+  overflow: hidden;
 }
 
 body {

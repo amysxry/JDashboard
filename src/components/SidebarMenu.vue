@@ -13,16 +13,19 @@
       }]"
     >
       <div class="sidebar-header">
-        <template v-if="!isCollapsed">
-          <img src="@/assets/Logo-JDigital-black1.png" class="logo" alt="JDigital"/>
-          <button @click="toggleCollapse" class="collapse-btn">
-            <ChevronLeft />
-          </button>
-        </template>
+        <img v-if="!isCollapsed || isMobileView" src="@/assets/Logo-JDigital-black1.png" class="logo" alt="JDigital"/>
+
+        <button v-if="isMobileView" @click="closeMobileMenu" class="collapse-btn">
+            <X class="h-6 w-6" />
+        </button>
+        
         <template v-else>
-          <button @click="toggleCollapse" class="collapse-btn mx-auto">
-            <Menu class="h-6 w-6" />
-          </button>
+            <button v-if="!isCollapsed" @click="toggleCollapse" class="collapse-btn">
+                <ChevronLeft />
+            </button>
+            <button v-else @click="toggleCollapse" class="collapse-btn mx-auto">
+                <Menu class="h-6 w-6" />
+            </button>
         </template>
       </div>
 
@@ -31,51 +34,51 @@
           <li>
             <RouterLink to="/dashboard" @click="closeMobileMenu" class="nav-link" :class="{ active: currentRoute === '/dashboard' }">
               <LayoutDashboard class="icon" />
-              <span v-show="!isCollapsed">Dashboard</span>
+              <span v-show="!isCollapsed || isMobileView">Dashboard</span>
             </RouterLink>
           </li>
           <li>
             <RouterLink to="/analytics" @click="closeMobileMenu" class="nav-link" :class="{ active: currentRoute === '/analytics' }">
               <BarChart3 class="icon" />
-              <span v-show="!isCollapsed">Google Analytics</span>
+              <span v-show="!isCollapsed || isMobileView">Google Analytics</span>
             </RouterLink>
           </li>
           <li>
             <RouterLink to="/ads" @click="closeMobileMenu" class="nav-link" :class="{ active: currentRoute === '/ads' }">
               <Target class="icon" />
-              <span v-show="!isCollapsed">Google Ads</span>
+              <span v-show="!isCollapsed || isMobileView">Google Ads</span>
             </RouterLink>
           </li>
           <li>
             <RouterLink to="/wordpress" @click="closeMobileMenu" class="nav-link" :class="{ active: currentRoute === '/wordpress' }">
               <Globe class="icon" />
-              <span v-show="!isCollapsed">WordPress</span>
+              <span v-show="!isCollapsed || isMobileView">WordPress</span>
             </RouterLink>
           </li>
           <li>
             <RouterLink to="/asana" @click="closeMobileMenu" class="nav-link" :class="{ active: currentRoute === '/asana' }">
               <CheckSquare class="icon" />
-              <span v-show="!isCollapsed">Asana</span>
+              <span v-show="!isCollapsed || isMobileView">Asana</span>
             </RouterLink>
           </li>
           <li>
             <RouterLink to="/reports" @click="closeMobileMenu" class="nav-link" :class="{ active: currentRoute === '/reports' }">
               <FileText class="icon" />
-              <span v-show="!isCollapsed">Reportes</span>
+              <span v-show="!isCollapsed || isMobileView">Reportes</span>
             </RouterLink>
           </li>
           
           <li class="mt-auto">
             <RouterLink to="/config" @click="closeMobileMenu" class="nav-link" :class="{ active: currentRoute === '/config' }">
               <Settings class="icon" />
-              <span v-show="!isCollapsed">Configuración</span>
+              <span v-show="!isCollapsed || isMobileView">Configuración</span>
             </RouterLink>
           </li>
 
           <li>
             <button @click="handleLogout" class="nav-link logout-btn">
               <LogOut class="icon" />
-              <span v-show="!isCollapsed">Cerrar Sesión</span>
+              <span v-show="!isCollapsed || isMobileView">Cerrar Sesión</span>
             </button>
           </li>
         </ul>
@@ -90,7 +93,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { supabase } from '@/lib/supabaseClient';
 import {
   LayoutDashboard, BarChart3, Target, Globe, CheckSquare,
-  FileText, Settings, ChevronLeft, Menu, LogOut
+  FileText, Settings, ChevronLeft, Menu, LogOut, X
 } from 'lucide-vue-next';
 
 const route = useRoute();
@@ -99,10 +102,23 @@ const router = useRouter();
 const isCollapsed = ref(false);
 const isMobileOpen = ref(false);
 
+// --- NUEVA LÓGICA PARA DETECTAR EL TAMAÑO DE LA PANTALLA ---
+const isMobileView = ref(window.innerWidth < 1024);
+
+const checkScreenSize = () => {
+  isMobileView.value = window.innerWidth < 1024;
+  // Si la pantalla se hace grande, cerramos el menú móvil
+  if (!isMobileView.value) {
+    isMobileOpen.value = false;
+  }
+};
+// --- FIN DE LA NUEVA LÓGICA ---
+
 const currentRoute = computed(() => route.path);
 
 const handleLogout = async () => {
   await supabase.auth.signOut();
+  isMobileOpen.value = false;
   router.push('/login');
 };
 
@@ -121,17 +137,22 @@ const closeMobileMenu = () => {
 
 onMounted(() => {
   window.addEventListener('toggle-mobile-sidebar', handleToggleMobile);
+  // Añadimos el listener para el tamaño de la ventana
+  window.addEventListener('resize', checkScreenSize);
 });
 
 onUnmounted(() => {
   window.removeEventListener('toggle-mobile-sidebar', handleToggleMobile);
+  // Quitamos el listener para el tamaño de la ventana
+  window.removeEventListener('resize', checkScreenSize);
 });
 </script>
 
 <style scoped>
+/* No se necesitan cambios en el CSS, pero se deja como referencia */
 .sidebar {
   width: var(--sidebar-width);
-  background-color: var(--color-bg-dark); /* Fondo principal del sidebar */
+  background-color: var(--color-bg-dark);
   height: 100vh;
   position: fixed;
   top: 0;
@@ -141,7 +162,6 @@ onUnmounted(() => {
   transition: width 0.3s ease-in-out, transform 0.3s ease-in-out;
   z-index: 30;
   box-sizing: border-box;
-  /* CAMBIO: quitamos el borde derecho de todo el sidebar */
 }
 
 .sidebar-collapsed {
@@ -152,14 +172,12 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.5rem;
-  /* CAMBIO: Mismo color de fondo que el TopBar para unificar */
+  padding: 3rem 0.75rem;
   background-color: var(--color-bg-accent); 
-  height: 69px; /* Mantenemos una altura fija y consistente */
+  height: 69px;
   box-sizing: border-box;
   flex-shrink: 0;
-  /* CAMBIO: Borde inferior que se alinea con el del TopBar */
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 0px solid var(--color-border);
 }
 
 .sidebar-collapsed .sidebar-header {
@@ -168,9 +186,8 @@ onUnmounted(() => {
 }
 
 .logo {
-  height: 36px;
+  height: 45px;
   transition: all 0.3s ease;
-  /* CAMBIO: No se necesita filtro si usas un logo blanco */
 }
 
 .collapse-btn {
@@ -179,7 +196,7 @@ onUnmounted(() => {
   color: #ffffff;
   cursor: pointer;
   padding: 0.5rem;
-  border-radius: 8px;
+  border-radius: 0px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -195,8 +212,7 @@ onUnmounted(() => {
   overflow-y: auto;
   -ms-overflow-style: none;
   scrollbar-width: none;
-  /* CAMBIO: El borde derecho ahora está solo en la navegación, no en el header */
-  border-right: 1px solid var(--color-border);
+  border-right: 0px solid var(--color-border);
 }
 
 .sidebar-nav::-webkit-scrollbar { display: none; }
@@ -227,7 +243,6 @@ onUnmounted(() => {
   color: #ffffff;
 }
 
-/* CAMBIO: Nuevo estilo para el link activo (más sutil) */
 .nav-link.active {
   background: linear-gradient(90deg, rgba(146, 208, 0, 0.2), rgba(146, 208, 0, 0.05));
   color: #ffffff;
@@ -252,13 +267,17 @@ onUnmounted(() => {
 .mt-auto { margin-top: auto; }
 
 @media (max-width: 1023px) {
-  .collapse-btn { display: flex; }
-  .sidebar { transform: translateX(-100%); width: 100vw; max-width: 320px; border-right: none; }
-  .sidebar-open-mobile { transform: translateX(0); }
-  .sidebar-header .collapse-btn { display: none; }
-  .sidebar-header { justify-content: flex-start; }
-  .nav-link span { display: inline-block !important; }
-  /* CAMBIO: En móvil el borde de la navegación desaparece */
-  .sidebar-nav { border-right: none; }
+  .sidebar { 
+    transform: translateX(-100%); 
+    width: 100vw; 
+    max-width: 320px; 
+    border-right: none; 
+  }
+  .sidebar-open-mobile { 
+    transform: translateX(0); 
+  }
+  .sidebar-nav { 
+    border-right: none; 
+  }
 }
 </style>
