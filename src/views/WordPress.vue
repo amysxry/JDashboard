@@ -1,82 +1,58 @@
 <template>
-  <div class="layout">
-    <SidebarMenu />
-
-    <div class="main-content" :style="{ marginLeft: dynamicMarginLeft }">
-      <header class="page-header">
-        <div class="header-left">
-          <h1 class="page-title">WooCommerce</h1>
-          <div class="info-tooltip">
-            <HelpCircle class="h-5 w-5" />
-            <span class="tooltip-text">Resumen de ventas y rendimiento de tu tienda online</span>
-          </div>
+  <div class="page-content">
+    <header class="page-header">
+      <div class="header-left">
+        <h1 class="page-title">WooCommerce</h1>
+        <div class="info-tooltip">
+          <HelpCircle class="h-5 w-5" />
+          <span class="tooltip-text">Resumen de ventas y rendimiento de tu tienda online</span>
         </div>
-        <div class="header-actions">
-          <select v-model="timeRange" @change="fetchData" class="time-select">
-            <option value="month">Último mes</option>
-            <option value="7d">Últimos 7 días</option>
-          </select>
-          <button @click="fetchData" class="refresh-btn">
-            <RefreshCw class="h-4 w-4" />
-            <span>Actualizar</span>
-          </button>
+      </div>
+      <div class="header-actions">
+        <select v-model="timeRange" @change="fetchData" class="time-select">
+          <option value="month">Último mes</option>
+          <option value="7d">Últimos 7 días</option>
+        </select>
+        <button @click="fetchData" class="refresh-btn">
+          <RefreshCw class="h-4 w-4" />
+          <span>Actualizar</span>
+        </button>
+      </div>
+    </header>
+
+    <main v-if="!isLoading && !fetchError" class="dashboard-main">
+      <section class="kpis-section">
+        <div class="kpi-card">
+          <p class="kpi-title">Ingresos Totales</p>
+          <h3 class="kpi-value">{{ formatCurrency(kpiSummary.totalSales) }}</h3>
         </div>
-      </header>
+        <div class="kpi-card">
+          <p class="kpi-title">Pedidos Realizados</p>
+          <h3 class="kpi-value">{{ kpiSummary.totalOrders }}</h3>
+        </div>
+        <div class="kpi-card">
+          <p class="kpi-title">Ticket Promedio</p>
+          <h3 class="kpi-value">{{ formatCurrency(kpiSummary.averageTicket) }}</h3>
+        </div>
+      </section>
+      </main>
 
-      <main v-if="!isLoading && !fetchError" class="dashboard-main">
-        <section class="kpis-section">
-          <div class="kpi-card">
-            <p class="kpi-title">Ingresos Totales</p>
-            <h3 class="kpi-value">{{ formatCurrency(kpiSummary.totalSales) }}</h3>
-          </div>
-          <div class="kpi-card">
-            <p class="kpi-title">Pedidos Realizados</p>
-            <h3 class="kpi-value">{{ kpiSummary.totalOrders }}</h3>
-          </div>
-          <div class="kpi-card">
-            <p class="kpi-title">Ticket Promedio</p>
-            <h3 class="kpi-value">{{ formatCurrency(kpiSummary.averageTicket) }}</h3>
-          </div>
-        </section>
-
-        </main>
-
-      <div v-if="isLoading" class="loading-message">Cargando datos...</div>
-      <div v-if="fetchError" class="error-message">{{ fetchError }}</div>
-    </div>
+    <div v-if="isLoading" class="loading-message">Cargando datos de WooCommerce...</div>
+    <div v-if="fetchError" class="error-message">{{ fetchError }}</div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+// CAMBIO: Se han eliminado las importaciones y lógica del sidebar.
+// ¡El script ahora es mucho más limpio!
+import { ref, onMounted, computed } from 'vue';
 import { supabase } from '@/lib/supabaseClient';
-import SidebarMenu from '@/components/SidebarMenu.vue';
 import { RefreshCw, HelpCircle } from 'lucide-vue-next';
-
-// --- LÓGICA DEL SIDEBAR (COPIADA DE OTROS COMPONENTES) ---
-const sidebarWidth = ref(380);
-const isMobileLayout = ref(false);
-
-const dynamicMarginLeft = computed(() => {
-  return isMobileLayout.value ? '0' : `${sidebarWidth.value}px`;
-});
-
-const handleSidebarWidthChange = (event: Event) => {
-  const customEvent = event as CustomEvent;
-  if (customEvent.detail && typeof customEvent.detail.width === 'number') {
-    sidebarWidth.value = customEvent.detail.width;
-  }
-};
-
-const checkLayoutSize = () => {
-    isMobileLayout.value = window.innerWidth < 1024;
-};
-// --- FIN DE LA LÓGICA DEL SIDEBAR ---
 
 // Estado del componente
 const isLoading = ref(true);
 const timeRange = ref('month');
-const salesReport = ref<any[]>([]); // Se puede definir un tipo más estricto si se quiere
+const salesReport = ref<any[]>([]);
 const fetchError = ref<string | null>(null);
 
 // Propiedades computadas para los KPIs
@@ -103,7 +79,6 @@ const fetchData = async () => {
     const { data: clientData } = await supabase.from('clientes').select('id').eq('auth_id', user.id).single();
     if (!clientData) throw new Error("Cliente no encontrado");
 
-    // Ahora leemos de la tabla de caché que nuestra Edge Function está llenando
     const { data: salesData, error: salesError } = await supabase
       .from('wc_sales_cache')
       .select('*')
@@ -127,31 +102,27 @@ const formatCurrency = (value: number) => {
 
 // Hooks del ciclo de vida
 onMounted(() => {
-  checkLayoutSize();
-  window.addEventListener('resize', checkLayoutSize);
-  window.addEventListener('sidebar-width-changed', handleSidebarWidthChange);
-  
   fetchData();
-});
-
-onUnmounted(() => {
-  window.removeEventListener('resize', checkLayoutSize);
-  window.removeEventListener('sidebar-width-changed', handleSidebarWidthChange);
 });
 </script>
 
 <style scoped>
-/* Estos estilos son consistentes con tus otras vistas */
-.layout { display: flex; }
-.main-content { flex: 1; padding: 2rem; background-color: #1e1e1e; color: #ffffff; transition: margin-left 0.3s ease; min-height: 100vh; }
+/* CAMBIO: La clase raíz ahora es .page-content para consistencia */
+.page-content {
+  padding: 2rem;
+  /* Eliminamos los estilos de .main-content que ahora están en el layout */
+}
+/* El resto de los estilos son muy similares, pero aplicados a este contexto */
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background-color: #2a2a2a; border-radius: 1rem; padding: 1.5rem; }
 .header-left { display: flex; align-items: center; gap: 0.5rem; }
-.page-title { font-size: 2rem; font-weight: 700; color: #fff; margin: 0; }
+.page-title { font-size: 1.5rem; font-weight: 600; color: #fff; margin: 0; }
 .header-actions { display: flex; gap: 1.5rem; align-items: center; }
 .time-select { padding: 0.5rem 1rem; border-radius: 0.5rem; background-color: #3b3b3b; color: #ffffff; border: 1px solid #92d000; cursor: pointer; }
 .refresh-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; border-radius: 0.5rem; background-color: #92d000; color: #1e1e1e; font-weight: 600; border: none; cursor: pointer; transition: background-color 0.2s; }
 .refresh-btn:hover { background-color: #7eb300; }
-.info-tooltip { position: relative; display: inline-flex; align-items: center; }
+.info-tooltip { position: relative; display: inline-flex; align-items: center; cursor: help; }
+.info-tooltip .tooltip-text { visibility: hidden; width: 220px; background-color: #333; color: #fff; text-align: center; border-radius: 6px; padding: 0.75rem; position: absolute; z-index: 10; bottom: 130%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.3s; font-size: 0.8rem; font-weight: normal; pointer-events: none; }
+.info-tooltip:hover .tooltip-text { visibility: visible; opacity: 1; }
 .kpis-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
 .kpi-card { background-color: #2a2a2a; padding: 1.5rem; border-radius: 1rem; border: 1px solid #3b3b3b; }
 .kpi-title { color: #aaa; font-size: 0.9rem; margin-bottom: 0.5rem; }

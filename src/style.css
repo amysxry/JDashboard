@@ -25,6 +25,15 @@
   --spacing-4: 1rem;   /* 16px */
   --spacing-6: 1.5rem;  /* 24px */
   --spacing-8: 2rem;   /* 32px */
+
+  /* CAMBIO: Añadimos las variables para las dimensiones del Layout.
+    Aquí puedes controlar el ancho del sidebar para toda la aplicación.
+  */
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 100px;
+
+  --header-height: 69px; /* Usaremos esta variable para ambos headers */
+
   
   /* Otros */
   --border-radius-md: 8px;
