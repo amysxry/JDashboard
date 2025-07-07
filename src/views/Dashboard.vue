@@ -7,11 +7,7 @@
         <div class="header-content">
           <div class="welcome-section">
             <h1 class="dashboard-title">¡Bienvenido, {{ clientName }}! 👋</h1>
-            <div class="saldo-section" v-if="clientBalance !== null">
-              <span class="saldo-label">Saldo de cuenta:</span>
-              <span class="saldo-value">${{ formatCurrency(clientBalance) }}</span>
-            </div>
-            <p class="welcome-subtitle">Aquí tienes un resumen de tu rendimiento digital</p>
+            <p class="welcome-subtitle">Aquí tienes un resumen de tu actividad y métricas clave</p>
           </div>
           <div class="header-actions">
             <button class="refresh-btn" @click="refreshData">
@@ -32,100 +28,106 @@
       </header>
 
       <main class="dashboard-main">
-        <section class="kpis-section">
+        <!-- Sección de Saldo Destacado -->
+        <section class="balance-section">
+          <div class="balance-card">
+            <div class="balance-content">
+              <div class="balance-icon">
+                <Wallet class="h-6 w-6" />
+              </div>
+              <div class="balance-info">
+                <h3 class="balance-label">Saldo disponible</h3>
+                <div class="balance-value">${{ formatCurrency(clientBalance) }}</div>
+                <p class="balance-description">Saldo actual en tu cuenta</p>
+              </div>
+            </div>
+            <div class="balance-actions">
+              <button class="action-btn primary">
+                <Plus class="h-4 w-4" />
+                <span>Recargar saldo</span>
+              </button>
+              <button class="action-btn secondary">
+                <History class="h-4 w-4" />
+                <span>V</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Sección de Trabajo del Mes -->
+        <section class="monthly-work-section">
           <div class="section-header">
-            <h2 class="section-title">Resumen de rendimiento</h2>
-            <div class="time-filter">
-              <select v-model="timeRange" class="time-select">
-                <option value="7d">Últimos 7 días</option>
-                <option value="30d">Últimos 30 días</option>
-              </select>
+            <h2 class="section-title">Este mes se estará trabajando con:</h2>
+          </div>
+          
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-header">
+                <div class="metric-icon bg-blue-100 text-blue-600">
+                  <FileText class="h-5 w-5" />
+                </div>
+                <div class="metric-trend positive">
+                  <TrendingUp class="h-4 w-4" />
+                  <span>12%</span>
+                </div>
+              </div>
+              <div class="metric-content">
+                <h3 class="metric-value">{{ monthlyMetrics.wordpressPosts }}</h3>
+                <p class="metric-title">Publicaciones planeadas</p>
+              </div>
             </div>
-          </div>
 
-          <div v-if="isLoading" class="loading-message">Cargando datos...</div>
-          <div v-else-if="!clientGaId" class="no-data-message">
-            No se pudo obtener el ID del cliente para cargar los datos de Google Analytics.
-            Asegúrate de que tu usuario esté vinculado a un cliente en la tabla 'clientes' a través de su 'auth_id'.
-          </div>
-          <div v-else-if="gaData.length === 0" class="no-data-message">
-            No hay datos de Google Analytics disponibles para el rango de fechas seleccionado.
-          </div>
-          <div v-else class="kpis-grid">
-            <div v-for="kpi in kpisData" :key="kpi.title" class="kpi-card">
-              <div class="kpi-header">
-                <div :class="['kpi-icon', kpi.bgColor]">
-                  <component :is="kpi.icon" class="h-5 w-5" />
+            <div class="metric-card">
+              <div class="metric-header">
+                <div class="metric-icon bg-indigo-100 text-indigo-600">
+                  <ListChecks class="h-5 w-5" />
                 </div>
-                <div class="help-container"
-                     @mouseenter="showPopover(kpi.title, $event)"
-                     @mouseleave="hidePopover">
-                  <HelpCircle class="h-4 w-4 text-gray-400 hover:text-gray-200 transition-colors cursor-help" />
+                <div class="metric-trend positive">
+                  <TrendingUp class="h-4 w-4" />
+                  <span>8%</span>
                 </div>
               </div>
-              <div class="kpi-content">
-                <p class="kpi-title">{{ kpi.title }}</p>
-                <h3 class="kpi-value">{{ kpi.value }}</h3>
+              <div class="metric-content">
+                <h3 class="metric-value">{{ monthlyMetrics.activeTasks }}</h3>
+                <p class="metric-title">Tareas activas</p>
               </div>
-              <div class="kpi-footer">
-                <div class="progress-bar">
-                  <div
-                    class="progress-fill"
-                    :class="kpi.trend === 'up' ? 'bg-green-500' : 'bg-red-500'"
-                    :style="{ width: kpi.progress + '%' }"
-                  ></div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-header">
+                <div class="metric-icon bg-green-100 text-green-600">
+                  <Megaphone class="h-5 w-5" />
                 </div>
+                <div class="metric-trend negative">
+                  <TrendingDown class="h-4 w-4" />
+                  <span>5%</span>
+                </div>
+              </div>
+              <div class="metric-content">
+                <h3 class="metric-value">{{ monthlyMetrics.activeCampaigns }}</h3>
+                <p class="metric-title">Campañas en curso</p>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-header">
+                <div class="metric-icon bg-purple-100 text-purple-600">
+                  <BarChart2 class="h-5 w-5" />
+                </div>
+                <div class="metric-trend positive">
+                  <TrendingUp class="h-4 w-4" />
+                  <span>15%</span>
+                </div>
+              </div>
+              <div class="metric-content">
+                <h3 class="metric-value">{{ monthlyMetrics.keywordsTracked }}</h3>
+                <p class="metric-title">Palabras clave monitoreadas</p>
               </div>
             </div>
           </div>
         </section>
 
-        <section class="charts-section">
-          <div class="chart-card">
-            <div class="chart-header">
-              <h3 class="chart-title">Visitas al Sitio Web</h3>
-              <div class="help-container"
-                   @mouseenter="showPopover('Visitas al Sitio Web', $event)"
-                   @mouseleave="hidePopover">
-                <HelpCircle class="h-4 w-4 text-gray-400 hover:text-gray-200 transition-colors cursor-help" />
-              </div>
-            </div>
-            <div class="chart-container">
-              <Line
-                :data="visitChartData"
-                :options="chartOptions"
-                v-if="!isLoading && gaData.length > 0"
-              />
-              <div v-else class="chart-placeholder">
-                <p v-if="isLoading">Cargando gráfica...</p>
-                <p v-else>No hay datos disponibles para la gráfica de visitas.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="chart-card">
-            <div class="chart-header">
-              <h3 class="chart-title">Conversiones</h3>
-              <div class="help-container"
-                   @mouseenter="showPopover('Conversiones', $event)"
-                   @mouseleave="hidePopover">
-                <HelpCircle class="h-4 w-4 text-gray-400 hover:text-gray-200 transition-colors cursor-help" />
-              </div>
-            </div>
-            <div class="chart-container">
-              <Bar
-                :data="conversionChartData"
-                :options="chartOptions"
-                v-if="!isLoading && gaData.length > 0"
-              />
-              <div v-else class="chart-placeholder">
-                <p v-if="isLoading">Cargando gráfica...</p>
-                <p v-else>No hay datos disponibles para la gráfica de conversiones.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
+        <!-- Sección de Posicionamiento SEO (sin cambios) -->
         <section class="data-section">
           <div class="data-card">
             <div class="data-header">
@@ -202,22 +204,24 @@
 <script setup>
 import { ref, onMounted, computed, watch, nextTick, onUnmounted } from 'vue'
 import { supabase } from '@/lib/supabaseClient'
-import { Line, Bar } from 'vue-chartjs'
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler } from 'chart.js'
-import {
+import { 
   ArrowUpIcon,
   ArrowDownIcon,
-  UsersIcon,
-  ShoppingCartIcon,
-  BarChart2Icon,
   RefreshCw,
   HelpCircle,
-  PercentIcon
+  Wallet,
+  Plus,
+  History,
+  FileText,
+  ListChecks,
+  Megaphone,
+  BarChart2,
+  TrendingUp,
+  TrendingDown
 } from 'lucide-vue-next'
 import SidebarMenu from '@/components/SidebarMenu.vue'
 
-// --- SIN CAMBIOS EN REGISTROS Y ESTADO DEL LAYOUT ---
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler)
+// --- Estado del layout ---
 const sidebarWidth = ref(200);
 const isMobileLayout = ref(false);
 const isSidebarCollapsed = ref(true);
@@ -225,13 +229,11 @@ const dynamicMarginLeft = computed(() => isMobileLayout.value ? '0' : `${sidebar
 const handleSidebarWidthChange = (event) => { sidebarWidth.value = event.detail.width; };
 const checkLayoutSize = () => { isMobileLayout.value = window.innerWidth < 1024; };
 
-// --- SIN CAMBIOS EN ESTADO DE DATOS Y POPOVER ---
+// --- Estado de datos ---
 const profilePhotoUrl = ref('');
 const clientName = ref('Cargando...');
 const clientBalance = ref(null);
-const timeRange = ref('30d');
-const gaData = ref([]);
-const isLoading = ref(true); // El estado de carga principal.
+const isLoading = ref(true);
 const clientGaId = ref(null);
 const seoKeywords = ref([]);
 const showHelpPopover = ref(false);
@@ -239,87 +241,34 @@ const currentHelpText = ref('');
 const popoverX = ref(0);
 const popoverY = ref(0);
 let hidePopoverTimeout = null;
-const helpDefinitions = { /* ... */ };
 
-// --- SIN CAMBIOS EN FUNCIONES DE UTILIDAD ---
-const getInitials = (name) => { /* ... */ };
-const formatCurrency = (value) => { /* ... */ };
+// Datos simulados para las métricas del mes
+const monthlyMetrics = ref({
+  wordpressPosts: 8,
+  activeTasks: 15,
+  activeCampaigns: 3,
+  keywordsTracked: 24
+});
 
-// --- FUNCIÓN DE FECHAS UNIFICADA (YA ESTABA BIEN) ---
-const getDateRange = (range) => {
-  const endDate = new Date();
-  const startDate = new Date();
-  switch (range) {
-    case '7d':
-      startDate.setDate(endDate.getDate() - 6);
-      break;
-    default:
-      startDate.setDate(endDate.getDate() - 29);
+// --- Funciones de utilidad ---
+const getInitials = (name) => {
+  if (!name) return '';
+  const names = name.split(' ');
+  let initials = names[0].substring(0, 1).toUpperCase();
+  if (names.length > 1) {
+    initials += names[names.length - 1].substring(0, 1).toUpperCase();
   }
-  return {
-    startDate: startDate.toISOString().split('T')[0],
-    endDate: endDate.toISOString().split('T')[0]
-  };
+  return initials;
 };
 
-
-// --- CORRECCIÓN DEFINITIVA: GESTIÓN DE `isLoading` ---
-
-// fetchAnalyticsData ya NO gestiona isLoading. Solo obtiene los datos.
-const fetchAnalyticsData = async () => {
-  if (!clientGaId.value) {
-    gaData.value = [];
-    return; // Salir si no hay ID
-  }
-  try {
-    const { startDate, endDate } = getDateRange(timeRange.value);
-    const { data, error } = await supabase.rpc('get_daily_analytics_data', {
-      p_client_id: clientGaId.value,
-      p_start_date: startDate,
-      p_end_date: endDate
-    });
-    if (error) throw error;
-    gaData.value = data || [];
-  } catch (err) {
-    console.error('Error específico al cargar datos de Analytics:', err);
-    gaData.value = []; // En caso de error, asegurar que los datos estén vacíos.
-  }
-  // Se elimina el bloque finally que modificaba isLoading.
+const formatCurrency = (value) => {
+  if (value === null || value === undefined) return '0.00';
+  return value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
 
-const fetchSeoData = async () => {
-    // Esta función ya estaba bien, no modificaba isLoading.
-    if (!clientGaId.value) return;
-    try {
-        const { data, error } = await supabase
-          .from('seo_rankings')
-          .select('keyword_id,position,previous_position,created_at,monitored_keywords(keyword)')
-          .eq('cliente_id', clientGaId.value)
-          .order('created_at', { ascending: false });
-        if (error) throw error;
-        const latestKeywords = {};
-        data.forEach(row => {
-          const keywordText = row.monitored_keywords?.keyword;
-          if (keywordText && !latestKeywords[keywordText]) {
-            latestKeywords[keywordText] = {
-              term: keywordText,
-              position: row.position,
-              change: row.previous_position !== null ? (row.previous_position - row.position) : 0,
-              lastUpdate: new Date(row.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
-            };
-          }
-        });
-        seoKeywords.value = Object.values(latestKeywords);
-    } catch(err) {
-        console.error('Error al cargar datos de SEO:', err);
-        seoKeywords.value = [];
-    }
-};
-
-// fetchClientInfo es AHORA EL ÚNICO que controla isLoading.
+// --- Funciones de datos ---
 const fetchClientInfo = async () => {
-  isLoading.value = true; // 1. La carga COMIENZA.
-  gaData.value = [];
+  isLoading.value = true;
   seoKeywords.value = [];
 
   try {
@@ -339,93 +288,90 @@ const fetchClientInfo = async () => {
     profilePhotoUrl.value = clientData.avatar_url;
 
     if (clientGaId.value) {
-      // Espera a que AMBAS promesas se resuelvan.
-      await Promise.all([
-          fetchAnalyticsData(),
-          fetchSeoData()
-      ]);
+      await fetchSeoData();
     }
+
+    // Simular carga de métricas integradas
+    setTimeout(() => {
+      monthlyMetrics.value = {
+        wordpressPosts: Math.floor(Math.random() * 10) + 5,
+        activeTasks: Math.floor(Math.random() * 20) + 10,
+        activeCampaigns: Math.floor(Math.random() * 5) + 1,
+        keywordsTracked: Math.floor(Math.random() * 30) + 15
+      };
+    }, 800);
+
   } catch (error) {
-    console.error('Error general al cargar info del cliente:', error);
+    console.error('Error al cargar info del cliente:', error);
     clientName.value = 'Usuario';
   } finally {
-    isLoading.value = false; // 2. La carga TERMINA, solo aquí.
+    isLoading.value = false;
   }
 };
 
-
-// --- PROPIEDADES COMPUTADAS Y DE GRÁFICAS (COMPLETAS Y SIN CAMBIOS) ---
-const totalSessions = computed(() => gaData.value.reduce((sum, row) => sum + (row.sessions || 0), 0));
-const totalActiveUsers = computed(() => gaData.value.reduce((sum, row) => sum + (row.users || 0), 0));
-const totalConversions = computed(() => gaData.value.reduce((sum, row) => sum + (row.conversions || 0), 0));
-const totalPageViews = computed(() => gaData.value.reduce((sum, row) => sum + (row.page_views || 0), 0));
-const averageBounceRate = computed(() => {
-  const totalBounceSum = gaData.value.reduce((sum, row) => sum + (row.bounce_rate || 0), 0);
-  const rate = gaData.value.length > 0 ? (totalBounceSum / gaData.value.length) : 0;
-  return (rate * 100).toFixed(2);
-});
-const conversionRate = computed(() => {
-  if (totalSessions.value === 0) return '0.00';
-  return ((totalConversions.value / totalSessions.value) * 100).toFixed(2);
-});
-const kpisData = computed(() => [
-  { title: 'Visitas Totales (Sesiones)', value: totalSessions.value.toLocaleString(), trend: 'up', progress: 85, icon: UsersIcon, bgColor: 'bg-blue-100 text-blue-600' },
-  { title: 'Usuarios Activos', value: totalActiveUsers.value.toLocaleString(), trend: 'up', progress: 90, icon: UsersIcon, bgColor: 'bg-indigo-100 text-indigo-600' },
-  { title: 'Conversiones', value: totalConversions.value.toLocaleString(), trend: 'up', progress: 92, icon: ShoppingCartIcon, bgColor: 'bg-green-100 text-green-600' },
-  { title: 'Porcentaje de Conversión', value: `${conversionRate.value}%`, trend: 'up', progress: 80, icon: PercentIcon, bgColor: 'bg-yellow-100 text-yellow-600' },
-  { title: 'Tasa de Rebote Promedio', value: `${averageBounceRate.value}%`, trend: 'down', progress: 70, icon: BarChart2Icon, bgColor: 'bg-red-100 text-red-600' },
-  { title: 'Vistas de Página', value: totalPageViews.value.toLocaleString(), trend: 'up', progress: 88, icon: BarChart2Icon, bgColor: 'bg-orange-100 text-orange-600' }
-]);
-const visitChartData = computed(() => {
-  const sortedData = [...gaData.value].sort((a, b) => new Date(a.date) - new Date(b.date));
-  const labels = sortedData.map(row => new Date(row.date).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }));
-  const data = sortedData.map(row => row.sessions || 0);
-  return {
-    labels,
-    datasets: [{
-      label: 'Visitas (Sesiones)', data, borderColor: '#92d000', backgroundColor: 'rgba(146, 208, 0, 0.1)',
-      tension: 0.4, fill: true, borderWidth: 2
-    }]
-  };
-});
-const conversionChartData = computed(() => {
-  const sortedData = [...gaData.value].sort((a, b) => new Date(a.date) - new Date(b.date));
-  const labels = sortedData.map(row => new Date(row.date).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }));
-  const data = sortedData.map(row => row.conversions || 0);
-  return {
-    labels,
-    datasets: [{
-      label: 'Conversiones', data, backgroundColor: '#fe7529', borderRadius: 4, borderWidth: 0
-    }]
-  };
-});
-const chartOptions = {
-  responsive: true, maintainAspectRatio: false,
-  plugins: { legend: { display: false }, tooltip: { backgroundColor: '#2a2a2a', titleColor: '#ffffff', bodyColor: '#ffffff', borderColor: 'rgba(146, 208, 0, 0.1)' }},
-  scales: {
-    y: { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#ffffff' }},
-    x: { grid: { display: false }, ticks: { color: '#ffffff' }}
+const fetchSeoData = async () => {
+  if (!clientGaId.value) return;
+  try {
+    const { data, error } = await supabase
+      .from('seo_rankings')
+      .select('keyword_id,position,previous_position,created_at,monitored_keywords(keyword)')
+      .eq('cliente_id', clientGaId.value)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    
+    const latestKeywords = {};
+    data.forEach(row => {
+      const keywordText = row.monitored_keywords?.keyword;
+      if (keywordText && !latestKeywords[keywordText]) {
+        latestKeywords[keywordText] = {
+          term: keywordText,
+          position: row.position,
+          change: row.previous_position !== null ? (row.previous_position - row.position) : 0,
+          lastUpdate: new Date(row.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+        };
+      }
+    });
+    seoKeywords.value = Object.values(latestKeywords);
+  } catch(err) {
+    console.error('Error al cargar datos de SEO:', err);
+    seoKeywords.value = [];
   }
 };
-// --- HOOKS Y WATCHERS ---
-const refreshData = async () => { await fetchClientInfo(); };
-const showPopover = (title, event) => { /* ... */ };
-const hidePopover = () => { /* ... */ };
 
+// --- Funciones de UI ---
+const refreshData = async () => { 
+  await fetchClientInfo(); 
+};
+
+const showPopover = (title, event) => {
+  clearTimeout(hidePopoverTimeout);
+  currentHelpText.value = helpDefinitions[title] || `Información sobre ${title}`;
+  popoverX.value = event.clientX + 10;
+  popoverY.value = event.clientY + 10;
+  showHelpPopover.value = true;
+};
+
+const hidePopover = () => {
+  hidePopoverTimeout = setTimeout(() => {
+    showHelpPopover.value = false;
+  }, 200);
+};
+
+// Definiciones de ayuda
+const helpDefinitions = {
+  'Posicionamiento SEO': 'Posiciones actuales de tus palabras clave en los resultados de búsqueda de Google.',
+  'Publicaciones planeadas': 'Número de publicaciones programadas para WordPress este mes.',
+  'Tareas activas': 'Tareas pendientes en Asana asignadas a tu proyecto.',
+  'Campañas en curso': 'Campañas activas actualmente en Google Ads.',
+  'Palabras clave monitoreadas': 'Palabras clave que estamos rastreando para tu posicionamiento SEO.'
+};
+
+// --- Hooks ---
 onMounted(() => {
   checkLayoutSize();
   window.addEventListener('resize', checkLayoutSize);
   window.addEventListener('sidebar-width-changed', handleSidebarWidthChange);
-  fetchClientInfo(); // No necesita await aquí
-});
-
-watch(timeRange, () => { // Se simplifica, ya que fetchAnalyticsData se llama dentro de fetchClientInfo
-  if (clientGaId.value) {
-    // En lugar de llamar solo a fetchAnalyticsData, es más robusto relanzar el fetch principal
-    // si queremos que el loading se comporte correctamente, aunque llamar solo a la de analytics también funciona.
-    // Para simpleza, llamamos solo a analytics si cambia el rango.
-     fetchAnalyticsData();
-  }
+  fetchClientInfo();
 });
 
 onUnmounted(() => {
@@ -439,21 +385,19 @@ onUnmounted(() => {
   min-height: 100vh;
   background-color: #1e1e1e;
   color: #ffffff;
-  display: flex; /* Keep flexbox for initial layout concept */
+  display: flex;
 }
 
 .main-content {
-  /* No more fixed margin-left in the CSS. It will be set by the :style binding. */
-  flex-grow: 1; /* Allow it to take up remaining space */
+  flex-grow: 1;
   padding: 2rem;
-  overflow-y: auto; /* Permite scroll vertical si el contenido es largo */
-  min-height: 100vh; /* Asegura que el contenido ocupe al menos la altura de la vista */
-  transition: margin-left 0.3s ease; /* Transición suave para el margen */
-  box-sizing: border-box; /* Incluye padding en el cálculo del ancho/alto */
-  width: auto; /* The width will be the remaining after the margin-left */
+  overflow-y: auto;
+  min-height: 100vh;
+  transition: margin-left 0.3s ease;
+  box-sizing: border-box;
+  width: auto;
 }
 
-/* Your existing CSS for other components (no changes here for the request) */
 .dashboard-header {
   background-color: #2a2a2a;
   border: 1px solid rgba(146, 208, 0, 0.1);
@@ -482,6 +426,8 @@ onUnmounted(() => {
 .dashboard-title {
   color: #ffffff;
   margin-bottom: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
 }
 
 .welcome-subtitle {
@@ -489,29 +435,6 @@ onUnmounted(() => {
   font-size: 0.9rem;
   margin-top: 0.5rem;
 }
-
-.saldo-section {
-  background-color: rgba(146, 208, 0, 0.1);
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #92d000;
-  margin-top: 0.5rem;
-}
-
-.saldo-label {
-  color: rgba(255, 255, 255, 0.8);
-  font-weight: 500;
-}
-
-.saldo-value {
-  color: #ffffff;
-}
-
 
 .header-actions {
   display: flex;
@@ -536,11 +459,6 @@ onUnmounted(() => {
 .refresh-btn:hover {
   background-color: #7eb300;
   transform: translateY(-1px);
-}
-
-.refresh-btn.small {
-  padding: 0.5rem 1rem;
-  font-size: 0.75rem;
 }
 
 .user-profile {
@@ -574,72 +492,154 @@ onUnmounted(() => {
   object-fit: cover;
 }
 
-
 .dashboard-main {
   padding: 0.5rem;
-  max-width: 100%; /* Ensure content doesn't overflow internally */
+  max-width: 100%;
   margin: 0 auto;
+}
+
+/* Sección de Saldo */
+.balance-section {
+  margin-bottom: 2rem;
+}
+
+.balance-card {
+  background: linear-gradient(135deg, rgba(146, 208, 0, 0.1) 0%, rgba(146, 208, 0, 0.05) 100%);
+  border: 1px solid rgba(146, 208, 0, 0.2);
+  border-radius: 1rem;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .balance-card {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.balance-content {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.balance-icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 0.75rem;
+  background-color: rgba(146, 208, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #92d000;
+}
+
+.balance-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.balance-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.balance-value {
+  color: #ffffff;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.balance-description {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.875rem;
+}
+
+.balance-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+}
+
+.action-btn.primary {
+  background-color: #92d000;
+  color: #1e1e1e;
+}
+
+.action-btn.primary:hover {
+  background-color: #7eb300;
+  transform: translateY(-1px);
+}
+
+.action-btn.secondary {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.action-btn.secondary:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+/* Sección de Trabajo del Mes */
+.monthly-work-section {
+  margin-bottom: 2rem;
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   flex-wrap: wrap;
   gap: 1rem;
 }
 
 .section-title {
   color: #ffffff;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  letter-spacing: -0.025em;
 }
 
-.time-filter {
-  position: relative;
-}
-
-.time-select {
-  padding: 0.5rem 2.5rem 0.5rem 1rem;
-  background-color: #2a2a2a;
-  border: 1px solid rgba(146, 208, 0, 0.3);
-  color: #ffffff;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 1rem;
-  cursor: pointer;
-}
-
-.kpis-section {
-  margin-bottom: 2rem;
-}
-
-.kpis-grid {
+.metrics-grid {
   display: grid;
   grid-template-columns: repeat(1, 1fr);
   grid-gap: 1.5rem;
-  margin-bottom: 2rem;
 }
 
 @media (min-width: 640px) {
-  .kpis-grid {
+  .metrics-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (min-width: 1024px) {
-  .kpis-grid {
+  .metrics-grid {
     grid-template-columns: repeat(4, 1fr);
   }
 }
 
-.kpi-card {
+.metric-card {
   background-color: #2a2a2a;
   border: 1px solid rgba(146, 208, 0, 0.1);
   border-radius: 1rem;
@@ -648,20 +648,20 @@ onUnmounted(() => {
   position: relative;
 }
 
-.kpi-card:hover {
+.metric-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
   border-color: rgba(146, 208, 0, 0.3);
 }
 
-.kpi-header {
+.metric-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
-.kpi-icon {
+.metric-icon {
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 0.5rem;
@@ -670,7 +670,7 @@ onUnmounted(() => {
   justify-content: center;
 }
 
-.kpi-trend {
+.metric-trend {
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -678,103 +678,37 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
-.kpi-content {
-  margin-bottom: 1.5rem;
+.metric-trend.positive {
+  color: #92d000;
 }
 
-.kpi-title {
-  font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 0.5rem;
+.metric-trend.negative {
+  color: #ff0000;
 }
 
-.kpi-value {
-  font-size: 1.5rem;
+.metric-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.metric-value {
+  font-size: 1.75rem;
   font-weight: 600;
   color: #ffffff;
+  line-height: 1;
 }
 
-.kpi-footer {
-  margin-top: auto;
+.metric-title {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
 }
 
-.progress-bar {
-  height: 0.375rem;
-  background-color: #F3F4F6;
-  border-radius: 0.75rem;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  border-radius: 0.75rem;
-}
-
-.charts-section {
-  display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  gap: 2rem;
-  margin-bottom: 2rem;
-}
-
-@media (min-width: 1024px) {
-  .charts-section {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.chart-card {
-  background-color: #2a2a2a;
-  border: 1px solid rgba(146, 208, 0, 0.1);
-  border-radius: 1rem;
-  padding: 1.5rem;
-  transition: all 0.3s ease;
-  position: relative;
-}
-
-.chart-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-  border-color: rgba(146, 208, 0, 0.3);
-}
-
-.chart-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.chart-title {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #ffffff;
-}
-
-.chart-container {
-  height: 200px; /* Adjust as needed */
-  width: 100%;
-}
-
-.chart-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: rgba(255, 255, 255, 0.6);
-  font-style: italic;
-}
-
+/* Sección de Posicionamiento SEO (sin cambios) */
 .data-section {
   display: grid;
   grid-template-columns: repeat(1, 1fr);
   gap: 2rem;
-}
-
-@media (min-width: 1024px) {
-  .data-section {
-    grid-template-columns: repeat(1, 1fr); /* Only SEO table remains */
-  }
 }
 
 .data-card {
@@ -827,7 +761,7 @@ onUnmounted(() => {
   padding: 0.75rem 1rem;
   text-align: left;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  white-space: nowrap; /* Prevent text wrapping */
+  white-space: nowrap;
 }
 
 .seo-table th {
@@ -891,13 +825,13 @@ onUnmounted(() => {
 /* Popover styles */
 .help-container {
   position: relative;
-  display: flex; /* To properly align HelpCircle icon */
+  display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .help-popover {
-  position: fixed; /* Use fixed for positioning relative to viewport */
+  position: fixed;
   background-color: #3a3a3a;
   color: #ffffff;
   padding: 0.75rem 1rem;
@@ -906,15 +840,11 @@ onUnmounted(() => {
   max-width: 250px;
   font-size: 0.875rem;
   z-index: 1000;
-  pointer-events: none; /* Allow clicks to pass through */
+  pointer-events: none;
   opacity: 0;
   transform: scale(0.9);
   transition: opacity 0.2s ease, transform 0.2s ease;
-  transform-origin: top left; /* Default origin */
-}
-
-.help-popover.popover-left {
-  transform-origin: top right;
+  transform-origin: top left;
 }
 
 .popover-fade-enter-active, .popover-fade-leave-active {
@@ -941,27 +871,51 @@ onUnmounted(() => {
   transform: translateY(-50%);
 }
 
-.help-popover.popover-left .popover-arrow {
-  border-width: 8px 0 8px 8px;
-  border-color: transparent transparent transparent #3a3a3a;
-  left: auto;
-  right: -8px;
-}
-
 /* Responsive adjustments */
 @media (max-width: 1023px) {
   .dashboard-layout {
-    flex-direction: column; /* Stack sidebar and content on small screens */
+    flex-direction: column;
   }
 
   .main-content {
-    margin-left: 0 !important; /* Override dynamic margin for mobile */
+    margin-left: 0 !important;
     width: 100%;
-    padding-top: 1rem; /* Adjust padding if sidebar is overlaying top */
+    padding-top: 1rem;
   }
 
   .dashboard-layout.collapsed .main-content {
-    margin-left: 0 !important; /* Ensure no margin even if collapsed on mobile */
+    margin-left: 0 !important;
+  }
+  
+  .balance-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .balance-actions {
+    width: 100%;
+  }
+  
+  .action-btn {
+    flex-grow: 1;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .refresh-btn {
+    flex-grow: 1;
+    justify-content: center;
   }
 }
 </style>

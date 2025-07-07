@@ -6,11 +6,18 @@
       <header class="page-header">
         <div class="header-left">
           <h1 class="page-title">Google Analytics 4</h1>
-          <div class="info-tooltip">
-            <HelpCircle class="h-5 w-5" />
-            <span class="tooltip-text">Datos desde tus métricas de Google Analytics 4</span>
-          </div>
+          <span class="ga-badge">
+      <CheckCircle class="badge-icon" />
+      Sincronizado con GA4
+    </span>
+          <p class="date-range-display">{{ displayDateRange }}</p>
         </div>
+
+        <div v-if="lastUpdated" class="last-updated-info">
+         <Clock class="update-icon" />
+             <span>Actualizado {{ timeAgo }}</span>
+        </div>
+
         <div class="header-actions">
           <div class="info-tooltip">
             <select v-model="timeRange" @change="refreshData" class="time-select">
@@ -111,6 +118,16 @@
             </div>
           </template>
         </section>
+
+        <section class="insight-section" v-if="keyInsight">
+           <div class="insight-icon">
+           <component :is="keyInsight.icon" />
+           </div>
+          <div class="insight-content">
+            <h3 class="insight-title">{{ keyInsight.title }}</h3>
+            <p class="insight-text">{{ keyInsight.text }}</p>
+          </div>
+         </section>
 
         <section class="charts-section">
           <div class="chart-card">
@@ -225,7 +242,7 @@
 import { ref, onMounted, computed, watch, onUnmounted } from 'vue'; // Corrected: Added onUnmounted
 import { supabase } from '@/lib/supabaseClient';
 import SidebarMenu from '@/components/SidebarMenu.vue';
-import { RefreshCw, HelpCircle, ArrowUpIcon, ArrowDownIcon } from 'lucide-vue-next';
+import { RefreshCw, HelpCircle, ArrowUpIcon, ArrowDownIcon, CheckCircle, TrendingUp, Target, Users, Clock } from 'lucide-vue-next';
 
 import {
   Chart as ChartJS,
@@ -258,6 +275,84 @@ ChartJS.register(
 // Variables reactivas para el ancho del sidebar
 const sidebarWidth = ref(280); // Ancho inicial del sidebar (normal)
 const isMobileLayout = ref(false); // Para controlar si estamos en móvil
+const lastUpdated = ref<Date | null>(null);
+
+const timeAgo = computed(() => {
+  if (!lastUpdated.value) return '';
+  
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - lastUpdated.value.getTime()) / 1000);
+
+  let interval = seconds / 31536000;
+  if (interval > 1) return `hace ${Math.floor(interval)} años`;
+  interval = seconds / 2592000;
+  if (interval > 1) return `hace ${Math.floor(interval)} meses`;
+  interval = seconds / 86400;
+  if (interval > 1) return `hace ${Math.floor(interval)} días`;
+  interval = seconds / 3600;
+  if (interval > 1) return `hace ${Math.floor(interval)} horas`;
+  interval = seconds / 60;
+  if (interval > 1) return `hace ${Math.floor(interval)} minutos`;
+  
+  return 'hace menos de un minuto';
+});
+
+const keyInsight = computed(() => {
+  // Si no hay datos, no muestres nada.
+  if (gaDailyMetrics.value.length === 0) return null;
+
+  // Prioridad 1: Crecimiento excepcional de usuarios
+  if (usersTrend.value === 'up' && usersChange.value > 50) {
+    return {
+      icon: TrendingUp,
+      title: '¡Excelente Crecimiento!',
+      text: `El número de usuarios activos ha aumentado un ${usersChange.value.toFixed(2)}% en la segunda mitad de este período. ¡Tu estrategia de adquisición está funcionando muy bien!`
+    };
+  }
+
+  // Prioridad 2: El canal con más tráfico
+  if (channelChartData.value.labels.length > 0) {
+    const topChannel = channelChartData.value.labels[0];
+    return {
+      icon: Target,
+      title: 'Tu Canal Principal',
+      text: `La mayoría de tus usuarios están llegando a través de '${topChannel}'. Considera potenciar las campañas en este canal para maximizar resultados.`
+    };
+  }
+  
+  // Prioridad 3: Mejora en el engagement
+  if (durationTrend.value === 'up' && durationChange.value > 10) {
+      return {
+          icon: Clock,
+          title: 'Mayor Interés de los Usuarios',
+          text: `La duración media de la sesión ha mejorado un ${durationChange.value.toFixed(2)}%. Los usuarios encuentran tu contenido cada vez más valioso.`
+      };
+  }
+
+  // Mensaje por defecto si no hay nada destacable
+  return {
+    icon: Users,
+    title: 'Rendimiento General',
+    text: `Durante este período, has alcanzado un total de ${formatNumber(kpiData.value.activeUsers)} usuarios a través de ${formatNumber(kpiData.value.sessions)} sesiones.`
+  };
+});
+
+const displayDateRange = computed(() => {
+  const { startDate, endDate } = getDateRange(timeRange.value);
+  
+  const formatDisplayDate = (dateString: string) => {
+    const date = new Date(dateString + 'T00:00:00');
+    return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+  };
+
+  const startYear = new Date(startDate + 'T00:00:00').getFullYear();
+  const endYear = new Date(endDate + 'T00:00:00').getFullYear();
+
+  if (startYear !== endYear) {
+    return `${formatDisplayDate(startDate)}, ${startYear} - ${formatDisplayDate(endDate)}, ${endYear}`;
+  }
+  return `${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)} de ${endYear}`;
+});
 
 // Computa el margin-left dinámicamente para el main-content
 const dynamicMarginLeft = computed(() => {
@@ -533,9 +628,18 @@ const getDateRange = (range: string) => {
       startDate.setDate(endDate.getDate() - 29);
       break;
   }
+
+  // Nueva función interna para formatear a YYYY-MM-DD respetando la fecha local
+  const formatDateToISO = (date: Date) => {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   return {
-    startDate: startDate.toISOString().split('T')[0],
-    endDate: endDate.toISOString().split('T')[0]
+    startDate: formatDateToISO(startDate),
+    endDate: formatDateToISO(endDate),
   };
 };
 
@@ -821,13 +925,17 @@ const refreshData = async () => {
 };
 
 onMounted(async () => {
-  checkLayoutSize(); // Verifica el tamaño inicial de la pantalla
-  window.addEventListener('resize', checkLayoutSize); // Escucha cambios de tamaño
+  checkLayoutSize();
+  window.addEventListener('resize', checkLayoutSize);
+  // Esta línea es importante para que el layout se ajuste al sidebar
+  window.addEventListener('sidebar-width-changed', handleSidebarWidthChange);
   await refreshData();
 });
 
-onUnmounted(() => { // This line caused the error if onUnmounted was not imported
-  window.removeEventListener('resize', checkLayoutSize); // Limpia el listener
+onUnmounted(() => {
+  window.removeEventListener('resize', checkLayoutSize);
+  // Y esta línea es importante para limpiar el listener
+  window.removeEventListener('sidebar-width-changed', handleSidebarWidthChange);
 });
 
 watch(timeRange, () => {
@@ -869,8 +977,15 @@ watch(timeRange, () => {
 
 .header-left {
   display: flex;
-  align-items: center;
+  flex-direction: column; /* Apila el título y la fecha */
+  align-items: flex-start; /* Alinea a la izquierda */
   gap: 0.5rem;
+}
+
+.title-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* Espacio entre el título y la etiqueta */
 }
 
 .page-title {
@@ -878,6 +993,31 @@ watch(timeRange, () => {
   font-weight: 700;
   color: #fff;
   margin: 0;
+}
+
+.ga-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: rgba(146, 208, 0, 0.15); /* Verde translúcido de tu marca */
+  color: var(--color-primary, #92d000); /* Color verde principal */
+  padding: 0.3rem 0.75rem;
+  border-radius: 50px; /* Para que sea una píldora */
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid rgba(146, 208, 0, 0.3);
+}
+
+.badge-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.date-range-display {
+  font-size: 0.9rem;
+  color: #aaa;
+  margin: 0;
+  padding-left: 2px;
 }
 
 .header-actions {
@@ -1237,5 +1377,44 @@ watch(timeRange, () => {
   100% {
     opacity: 1;
   }
+}
+
+.insight-section {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  background: linear-gradient(90deg, rgba(146, 208, 0, 0.1) 0%, rgba(90, 125, 22, 0.1) 100%);
+  border-left: 4px solid var(--color-primary, #92d000);
+  padding: 1.5rem 2rem;
+  border-radius: var(--border-radius-lg);
+  margin-bottom: 2rem;
+}
+
+.insight-icon {
+  flex-shrink: 0;
+  color: var(--color-primary, #92d000);
+}
+
+.insight-icon svg {
+  width: 40px;
+  height: 40px;
+}
+
+.insight-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.insight-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.insight-text {
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
 }
 </style>
