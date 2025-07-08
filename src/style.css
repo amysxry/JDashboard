@@ -29,7 +29,7 @@
   /* Dimensiones del Layout */
   --sidebar-width: 280px;
   --sidebar-collapsed-width: 100px;
-  --header-height: 280px; /* Usaremos esta variable para ambos headers */
+  --header-height: 100px; /* Usaremos esta variable para ambos headers */
   
   /* Otros */
   --border-radius-md: 8px;

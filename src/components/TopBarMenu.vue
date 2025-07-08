@@ -44,8 +44,8 @@ const toggleMobileSidebar = () => {
 .top-navbar {
   display: flex;
   align-items: center;
-  /* CAMBIO: Eliminamos justify-content. El margen automático hará el trabajo. */
-  height: var(--header-height);
+  height: var(--header-height, 69px); /* <-- AÑADIDO: Altura fija */
+  flex-shrink: 0; /* <-- AÑADIDO: Evita que se encoja verticalmente */
   padding: 0 1.5rem;
   background-color: var(--color-bg-accent);
   border-bottom: 1px solid var(--color-border);
