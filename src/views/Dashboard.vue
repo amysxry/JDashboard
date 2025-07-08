@@ -1,321 +1,165 @@
 <template>
-  <div class="dashboard-layout" :class="{ 'collapsed': isSidebarCollapsed }">
-    <SidebarMenu v-model:collapsed="isSidebarCollapsed" @sidebar-width-changed="handleSidebarWidthChange" />
+  <div class="page-content-wrapper">
+    <div v-if="isLoading" class="loading-container">
+      <div class="spinner"></div>
+      <p>Cargando tu dashboard...</p>
+    </div>
 
-    <div class="main-content" :style="{ marginLeft: dynamicMarginLeft }">
-      <header class="dashboard-header">
-        <div class="header-content">
-          <div class="welcome-section">
-            <h1 class="dashboard-title">¡Bienvenido, {{ clientName }}! 👋</h1>
-            <p class="welcome-subtitle">Aquí tienes un resumen de tu actividad y métricas clave</p>
-          </div>
-          <div class="header-actions">
-            <button class="refresh-btn" @click="refreshData">
-              <RefreshCw class="h-4 w-4" />
-              <span>Actualizar datos</span>
-            </button>
-            <div class="user-profile">
-              <span class="user-name">{{ clientName }}</span>
-              <div class="avatar">
-                <template v-if="profilePhotoUrl">
-                  <img :src="profilePhotoUrl" alt="Avatar de perfil" class="profile-photo">
-                </template>
-                <template v-else><span class="initials">{{ getInitials(clientName) }}</span></template>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div v-else class="dashboard-content">
+      <header class="page-header">
+        <h1 class="welcome-title">Hola, {{ clientName }} 👋</h1>
+        <p class="welcome-subtitle">Bienvenido a tu centro de mando. Aquí tienes el pulso de tu proyecto.</p>
       </header>
 
-      <main class="dashboard-main">
-        <!-- Sección de Saldo Destacado -->
-        <section class="balance-section">
-          <div class="balance-card">
-            <div class="balance-content">
-              <div class="balance-icon">
-                <Wallet class="h-6 w-6" />
-              </div>
-              <div class="balance-info">
-                <h3 class="balance-label">Saldo disponible</h3>
-                <div class="balance-value">${{ formatCurrency(clientBalance) }}</div>
-                <p class="balance-description">Saldo actual en tu cuenta</p>
-              </div>
-            </div>
-            <div class="balance-actions">
-              <button class="action-btn primary">
-                <Plus class="h-4 w-4" />
-                <span>Recargar saldo</span>
-              </button>
-              <button class="action-btn secondary">
-                <History class="h-4 w-4" />
-                <span>V</span>
-              </button>
+      <main class="content-grid">
+        <div class="content-card balance-card">
+          <div class="card-icon-bg">
+            <Wallet class="h-6 w-6" />
+          </div>
+          <div class="balance-info">
+            <h3 class="card-label">Saldo Disponible</h3>
+            <div class="balance-value">${{ formatCurrency(clientBalance) }}</div>
+            <p class="card-description">Fondos actuales en tu cuenta.</p>
+          </div>
+        </div>
+
+        <div v-if="keywordToWatch" class="content-card insight-card">
+          <div class="card-icon-bg">
+            <TrendingUp class="h-6 w-6" />
+          </div>
+          <div class="insight-info">
+            <h3 class="card-label">Análisis Rápido</h3>
+            <p class="insight-text">
+              ¡Buen trabajo! Tu palabra clave
+              <strong>"{{ keywordToWatch.term }}"</strong>
+              subió a la posición
+              <strong>#{{ keywordToWatch.position }}</strong>.
+            </p>
+          </div>
+        </div>
+        
+        <div class="content-card seo-card">
+          <div class="card-header">
+            <h3 class="card-title">Reporte de Posicionamiento SEO</h3>
+            <div class="help-container"
+                 @mouseenter="showPopover($event)"
+                 @mouseleave="hidePopover">
+              <HelpCircle class="h-5 w-5" />
             </div>
           </div>
-        </section>
-
-        <!-- Sección de Trabajo del Mes -->
-        <section class="monthly-work-section">
-          <div class="section-header">
-            <h2 class="section-title">Este mes se estará trabajando con:</h2>
+          <div v-if="seoKeywords.length === 0" class="no-data-message">
+            Aún no hay datos de SEO para mostrar.
           </div>
-          
-          <div class="metrics-grid">
-            <div class="metric-card">
-              <div class="metric-header">
-                <div class="metric-icon bg-blue-100 text-blue-600">
-                  <FileText class="h-5 w-5" />
-                </div>
-                <div class="metric-trend positive">
-                  <TrendingUp class="h-4 w-4" />
-                  <span>12%</span>
-                </div>
-              </div>
-              <div class="metric-content">
-                <h3 class="metric-value">{{ monthlyMetrics.wordpressPosts }}</h3>
-                <p class="metric-title">Publicaciones planeadas</p>
-              </div>
-            </div>
-
-            <div class="metric-card">
-              <div class="metric-header">
-                <div class="metric-icon bg-indigo-100 text-indigo-600">
-                  <ListChecks class="h-5 w-5" />
-                </div>
-                <div class="metric-trend positive">
-                  <TrendingUp class="h-4 w-4" />
-                  <span>8%</span>
-                </div>
-              </div>
-              <div class="metric-content">
-                <h3 class="metric-value">{{ monthlyMetrics.activeTasks }}</h3>
-                <p class="metric-title">Tareas activas</p>
-              </div>
-            </div>
-
-            <div class="metric-card">
-              <div class="metric-header">
-                <div class="metric-icon bg-green-100 text-green-600">
-                  <Megaphone class="h-5 w-5" />
-                </div>
-                <div class="metric-trend negative">
-                  <TrendingDown class="h-4 w-4" />
-                  <span>5%</span>
-                </div>
-              </div>
-              <div class="metric-content">
-                <h3 class="metric-value">{{ monthlyMetrics.activeCampaigns }}</h3>
-                <p class="metric-title">Campañas en curso</p>
-              </div>
-            </div>
-
-            <div class="metric-card">
-              <div class="metric-header">
-                <div class="metric-icon bg-purple-100 text-purple-600">
-                  <BarChart2 class="h-5 w-5" />
-                </div>
-                <div class="metric-trend positive">
-                  <TrendingUp class="h-4 w-4" />
-                  <span>15%</span>
-                </div>
-              </div>
-              <div class="metric-content">
-                <h3 class="metric-value">{{ monthlyMetrics.keywordsTracked }}</h3>
-                <p class="metric-title">Palabras clave monitoreadas</p>
-              </div>
-            </div>
+          <div v-else class="seo-table-container">
+            <table class="seo-table">
+              <thead>
+                <tr>
+                  <th>Palabra Clave</th>
+                  <th>Posición</th>
+                  <th>Cambio (7d)</th>
+                  <th>Última Revisión</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="keyword in seoKeywords" :key="keyword.term">
+                  <td class="keyword-cell">{{ keyword.term }}</td>
+                  <td>
+                    <span class="position-badge" :class="getPositionBadgeClass(keyword.position)">
+                      #{{ keyword.position }}
+                    </span>
+                  </td>
+                  <td>
+                    <span v-if="keyword.change !== 0" class="change-indicator" :class="{'positive': keyword.change > 0, 'negative': keyword.change < 0}">
+                      <component :is="keyword.change > 0 ? ArrowUpIcon : ArrowDownIcon" class="h-3 w-3" />
+                      {{ Math.abs(keyword.change) }}
+                    </span>
+                    <span v-else class="change-indicator neutral">-</span>
+                  </td>
+                  <td>{{ keyword.lastUpdate }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-        </section>
-
-        <!-- Sección de Posicionamiento SEO (sin cambios) -->
-        <section class="data-section">
-          <div class="data-card">
-            <div class="data-header">
-              <h3 class="data-title">Posicionamiento SEO</h3>
-              <div class="help-container"
-                   @mouseenter="showPopover('Posicionamiento SEO', $event)"
-                   @mouseleave="hidePopover">
-                <HelpCircle class="h-4 w-4 text-gray-400 hover:text-gray-200 transition-colors cursor-help" />
-              </div>
-            </div>
-            <div v-if="isLoading" class="loading-message">Cargando datos de SEO...</div>
-            <div v-else-if="!clientGaId" class="no-data-message">
-              No se pudo obtener el ID del cliente para cargar los datos de SEO.
-            </div>
-            <div v-else-if="seoKeywords.length === 0" class="no-data-message">
-              No hay datos de posicionamiento SEO disponibles para este cliente.
-            </div>
-            <div v-else class="seo-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Palabra clave</th>
-                    <th>Posición</th>
-                    <th>Cambio</th>
-                    <th>Última actualización</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="keyword in seoKeywords" :key="keyword.term">
-                    <td>{{ keyword.term }}</td>
-                    <td>
-                      <span class="position-badge" :class="{
-                        'excellent': keyword.position <= 3,
-                        'good': keyword.position > 3 && keyword.position <= 10,
-                        'average': keyword.position > 10 && keyword.position <= 20,
-                        'poor': keyword.position > 20
-                      }">
-                        #{{ keyword.position }}
-                      </span>
-                    </td>
-                    <td>
-                      <span class="change-indicator" :class="{
-                        'positive': keyword.change > 0,
-                        'negative': keyword.change < 0
-                      }">
-                        <component
-                          :is="keyword.change > 0 ? ArrowUpIcon : ArrowDownIcon"
-                          class="h-3 w-3"
-                        />
-                        {{ Math.abs(keyword.change) }}
-                      </span>
-                    </td>
-                    <td>{{ keyword.lastUpdate }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
+        </div>
       </main>
     </div>
 
     <Transition name="popover-fade">
-      <div v-if="showHelpPopover"
-           class="help-popover"
-           :style="{ top: popoverY + 'px', left: popoverX + 'px' }">
-        <div class="popover-arrow"></div>
-        <p class="popover-text">{{ currentHelpText }}</p>
+      <div v-if="showHelpPopover" class="help-popover" :style="{ top: popoverY + 'px', left: popoverX + 'px' }">
+        <p class="popover-text">Muestra la posición de tus palabras clave en Google y su cambio reciente.</p>
       </div>
     </Transition>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch, nextTick, onUnmounted } from 'vue'
-import { supabase } from '@/lib/supabaseClient'
-import { 
-  ArrowUpIcon,
-  ArrowDownIcon,
-  RefreshCw,
-  HelpCircle,
-  Wallet,
-  Plus,
-  History,
-  FileText,
-  ListChecks,
-  Megaphone,
-  BarChart2,
-  TrendingUp,
-  TrendingDown
-} from 'lucide-vue-next'
-import SidebarMenu from '@/components/SidebarMenu.vue'
-
-// --- Estado del layout ---
-const sidebarWidth = ref(200);
-const isMobileLayout = ref(false);
-const isSidebarCollapsed = ref(true);
-const dynamicMarginLeft = computed(() => isMobileLayout.value ? '0' : `${sidebarWidth.value}px`);
-const handleSidebarWidthChange = (event) => { sidebarWidth.value = event.detail.width; };
-const checkLayoutSize = () => { isMobileLayout.value = window.innerWidth < 1024; };
+import { ref, onMounted, computed, onUnmounted } from 'vue';
+import { supabase } from '@/lib/supabaseClient';
+import { ArrowUpIcon, ArrowDownIcon, HelpCircle, Wallet, TrendingUp } from 'lucide-vue-next';
 
 // --- Estado de datos ---
-const profilePhotoUrl = ref('');
-const clientName = ref('Cargando...');
-const clientBalance = ref(null);
 const isLoading = ref(true);
-const clientGaId = ref(null);
+const clientName = ref('');
+const clientBalance = ref(null);
 const seoKeywords = ref([]);
 const showHelpPopover = ref(false);
-const currentHelpText = ref('');
 const popoverX = ref(0);
 const popoverY = ref(0);
 let hidePopoverTimeout = null;
 
-// Datos simulados para las métricas del mes
-const monthlyMetrics = ref({
-  wordpressPosts: 8,
-  activeTasks: 15,
-  activeCampaigns: 3,
-  keywordsTracked: 24
+// --- Propiedades Computadas ---
+const keywordToWatch = computed(() => {
+  if (!seoKeywords.value || seoKeywords.value.length === 0) return null;
+  // Encuentra la palabra clave con el cambio positivo más grande
+  return seoKeywords.value
+    .filter(k => k.change > 0)
+    .sort((a, b) => b.change - a.change)[0] || null;
 });
 
-// --- Funciones de utilidad ---
-const getInitials = (name) => {
-  if (!name) return '';
-  const names = name.split(' ');
-  let initials = names[0].substring(0, 1).toUpperCase();
-  if (names.length > 1) {
-    initials += names[names.length - 1].substring(0, 1).toUpperCase();
-  }
-  return initials;
-};
-
+// --- Funciones de Utilidad ---
 const formatCurrency = (value) => {
   if (value === null || value === undefined) return '0.00';
   return value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
 
-// --- Funciones de datos ---
-const fetchClientInfo = async () => {
-  isLoading.value = true;
-  seoKeywords.value = [];
+const getPositionBadgeClass = (position) => {
+  if (position <= 3) return 'excellent';
+  if (position <= 10) return 'good';
+  if (position <= 20) return 'average';
+  return 'poor';
+};
 
+// --- Funciones de Datos ---
+const fetchDashboardData = async () => {
+  isLoading.value = true;
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuario no autenticado');
 
-    const { data: clientData, error: clientError } = await supabase
+    const { data: clientData, error } = await supabase
       .from('clientes')
-      .select('id, empresa, saldo, avatar_url')
+      .select('id, empresa, saldo')
       .eq('auth_id', user.id)
       .single();
-    if (clientError) throw clientError;
+    if (error) throw error;
 
     clientName.value = clientData.empresa;
-    clientGaId.value = clientData.id;
     clientBalance.value = clientData.saldo;
-    profilePhotoUrl.value = clientData.avatar_url;
 
-    if (clientGaId.value) {
-      await fetchSeoData();
-    }
-
-    // Simular carga de métricas integradas
-    setTimeout(() => {
-      monthlyMetrics.value = {
-        wordpressPosts: Math.floor(Math.random() * 10) + 5,
-        activeTasks: Math.floor(Math.random() * 20) + 10,
-        activeCampaigns: Math.floor(Math.random() * 5) + 1,
-        keywordsTracked: Math.floor(Math.random() * 30) + 15
-      };
-    }, 800);
-
+    await fetchSeoData(clientData.id);
   } catch (error) {
-    console.error('Error al cargar info del cliente:', error);
-    clientName.value = 'Usuario';
+    console.error('Error al cargar datos del dashboard:', error);
   } finally {
     isLoading.value = false;
   }
 };
 
-const fetchSeoData = async () => {
-  if (!clientGaId.value) return;
+const fetchSeoData = async (clienteId) => {
   try {
     const { data, error } = await supabase
       .from('seo_rankings')
-      .select('keyword_id,position,previous_position,created_at,monitored_keywords(keyword)')
-      .eq('cliente_id', clientGaId.value)
+      .select('position, previous_position, created_at, monitored_keywords(keyword)')
+      .eq('cliente_id', clienteId)
       .order('created_at', { ascending: false });
     if (error) throw error;
     
@@ -327,7 +171,7 @@ const fetchSeoData = async () => {
           term: keywordText,
           position: row.position,
           change: row.previous_position !== null ? (row.previous_position - row.position) : 0,
-          lastUpdate: new Date(row.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+          lastUpdate: new Date(row.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })
         };
       }
     });
@@ -339,583 +183,194 @@ const fetchSeoData = async () => {
 };
 
 // --- Funciones de UI ---
-const refreshData = async () => { 
-  await fetchClientInfo(); 
-};
-
-const showPopover = (title, event) => {
+const showPopover = (event) => {
   clearTimeout(hidePopoverTimeout);
-  currentHelpText.value = helpDefinitions[title] || `Información sobre ${title}`;
-  popoverX.value = event.clientX + 10;
-  popoverY.value = event.clientY + 10;
+  const rect = event.target.getBoundingClientRect();
+  popoverX.value = rect.left + rect.width / 2;
+  popoverY.value = rect.top - 10;
   showHelpPopover.value = true;
 };
-
 const hidePopover = () => {
-  hidePopoverTimeout = setTimeout(() => {
-    showHelpPopover.value = false;
-  }, 200);
+  hidePopoverTimeout = setTimeout(() => { showHelpPopover.value = false; }, 200);
 };
 
-// Definiciones de ayuda
-const helpDefinitions = {
-  'Posicionamiento SEO': 'Posiciones actuales de tus palabras clave en los resultados de búsqueda de Google.',
-  'Publicaciones planeadas': 'Número de publicaciones programadas para WordPress este mes.',
-  'Tareas activas': 'Tareas pendientes en Asana asignadas a tu proyecto.',
-  'Campañas en curso': 'Campañas activas actualmente en Google Ads.',
-  'Palabras clave monitoreadas': 'Palabras clave que estamos rastreando para tu posicionamiento SEO.'
-};
-
-// --- Hooks ---
-onMounted(() => {
-  checkLayoutSize();
-  window.addEventListener('resize', checkLayoutSize);
-  window.addEventListener('sidebar-width-changed', handleSidebarWidthChange);
-  fetchClientInfo();
-});
-
-onUnmounted(() => {
-  window.removeEventListener('resize', checkLayoutSize);
-  window.removeEventListener('sidebar-width-changed', handleSidebarWidthChange);
-});
+// --- Hooks de Ciclo de Vida ---
+onMounted(fetchDashboardData);
+onUnmounted(() => clearTimeout(hidePopoverTimeout));
 </script>
 
 <style scoped>
-.dashboard-layout {
-  min-height: 100vh;
-  background-color: #1e1e1e;
-  color: #ffffff;
-  display: flex;
-}
-
-.main-content {
-  flex-grow: 1;
+/* --- DISEÑO GENERAL Y BIENVENIDA --- */
+.page-content-wrapper {
   padding: 2rem;
-  overflow-y: auto;
-  min-height: 100vh;
-  transition: margin-left 0.3s ease;
+  width: 100%;
   box-sizing: border-box;
-  width: auto;
+  background-color: var(--color-bg-dark);
 }
 
-.dashboard-header {
-  background-color: #2a2a2a;
-  border: 1px solid rgba(146, 208, 0, 0.1);
-  padding: 1.5rem 2rem;
-  margin-bottom: 1.5rem;
-  border-radius: 1rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+.loading-container {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: calc(100vh - 4rem); color: var(--color-text-secondary); gap: 1rem;
+}
+.spinner {
+  width: 48px; height: 48px; border: 5px solid var(--color-border);
+  border-bottom-color: var(--color-primary); border-radius: 50%;
+  animation: rotation 1s linear infinite;
+}
+@keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+.page-header {
+  margin-bottom: 2rem;
+}
+.welcome-title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+.welcome-subtitle {
+  font-size: 1.1rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.25rem;
 }
 
-.header-content {
+/* --- GRILLA Y TARJETAS --- */
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.content-card {
+  background-color: var(--color-bg-accent);
+  border-radius: var(--border-radius-xl);
+  padding: 1.5rem;
+  border: 1px solid var(--color-border);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+.content-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  border-color: #4f4f4f;
+}
+
+.card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-  max-width: 100%;
-  margin: 0 auto;
+  margin-bottom: 1.5rem;
 }
-
-.welcome-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.dashboard-title {
-  color: #ffffff;
-  margin-bottom: 0;
-  font-size: 1.5rem;
+.card-title {
+  font-size: 1.1rem;
   font-weight: 600;
+  color: var(--color-text-primary);
 }
+.help-container {
+  cursor: help;
+  color: var(--color-text-secondary);
+  transition: color 0.2s ease;
+}
+.help-container:hover { color: var(--color-primary); }
 
-.welcome-subtitle {
-  color: rgba(255, 255, 255, 0.7);
+.card-label {
+  color: var(--color-text-secondary);
   font-size: 0.9rem;
-  margin-top: 0.5rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
 }
 
-.header-actions {
-  display: flex;
+/* --- TARJETAS PEQUEÑAS (SALDO Y ANÁLISIS) --- */
+.balance-card, .insight-card {
+  flex-direction: row;
   align-items: center;
   gap: 1.5rem;
 }
-
-.refresh-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background-color: #92d000;
-  color: #ffffff;
-  border: none;
-  border-radius: 0.75rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  cursor: pointer;
+.card-icon-bg {
+  width: 48px; height: 48px;
+  border-radius: var(--border-radius-lg);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
-
-.refresh-btn:hover {
-  background-color: #7eb300;
-  transform: translateY(-1px);
-}
-
-.user-profile {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.user-name {
-  font-size: 1rem;
-  color: #ffffff;
-}
-
-.avatar {
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
-  background-color: #3B82F6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #FFFFFF;
-  font-weight: 500;
-  font-size: 0.75rem;
-  overflow: hidden;
-}
-
-.profile-photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.dashboard-main {
-  padding: 0.5rem;
-  max-width: 100%;
-  margin: 0 auto;
-}
-
-/* Sección de Saldo */
-.balance-section {
-  margin-bottom: 2rem;
-}
-
-.balance-card {
-  background: linear-gradient(135deg, rgba(146, 208, 0, 0.1) 0%, rgba(146, 208, 0, 0.05) 100%);
-  border: 1px solid rgba(146, 208, 0, 0.2);
-  border-radius: 1rem;
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-@media (min-width: 768px) {
-  .balance-card {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-}
-
-.balance-content {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.balance-icon {
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: 0.75rem;
-  background-color: rgba(146, 208, 0, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #92d000;
-}
-
-.balance-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.balance-label {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 1rem;
-  font-weight: 500;
-}
+.balance-card .card-icon-bg { background-color: rgba(146, 208, 0, 0.15); color: #92d000; }
+.insight-card .card-icon-bg { background-color: rgba(59, 130, 246, 0.15); color: #3b82f6; }
 
 .balance-value {
-  color: #ffffff;
-  font-size: 2rem;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.balance-description {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.875rem;
-}
-
-.balance-actions {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.action-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  border-radius: 0.75rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  border: none;
-}
-
-.action-btn.primary {
-  background-color: #92d000;
-  color: #1e1e1e;
-}
-
-.action-btn.primary:hover {
-  background-color: #7eb300;
-  transform: translateY(-1px);
-}
-
-.action-btn.secondary {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.action-btn.secondary:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-1px);
-}
-
-/* Sección de Trabajo del Mes */
-.monthly-work-section {
-  margin-bottom: 2rem;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.section-title {
-  color: #ffffff;
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-
-.metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  grid-gap: 1.5rem;
-}
-
-@media (min-width: 640px) {
-  .metrics-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 1024px) {
-  .metrics-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-.metric-card {
-  background-color: #2a2a2a;
-  border: 1px solid rgba(146, 208, 0, 0.1);
-  border-radius: 1rem;
-  padding: 1.5rem;
-  transition: all 0.3s ease;
-  position: relative;
-}
-
-.metric-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-  border-color: rgba(146, 208, 0, 0.3);
-}
-
-.metric-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.metric-icon {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.metric-trend {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.metric-trend.positive {
-  color: #92d000;
-}
-
-.metric-trend.negative {
-  color: #ff0000;
-}
-
-.metric-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.metric-value {
   font-size: 1.75rem;
   font-weight: 600;
-  color: #ffffff;
-  line-height: 1;
+  color: var(--color-text-primary);
+  line-height: 1.2;
 }
-
-.metric-title {
-  font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-/* Sección de Posicionamiento SEO (sin cambios) */
-.data-section {
-  display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  gap: 2rem;
-}
-
-.data-card {
-  background-color: #2a2a2a;
-  border: 1px solid rgba(146, 208, 0, 0.1);
-  border-radius: 1rem;
-  padding: 1.5rem;
-  transition: all 0.3s ease;
-  position: relative;
-}
-
-.data-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-  border-color: rgba(146, 208, 0, 0.3);
-}
-
-.data-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.data-title {
+.card-description { font-size: 0.8rem; color: #828282; margin-top: 0.1rem; }
+.insight-text {
   font-size: 1rem;
-  font-weight: 500;
-  color: #ffffff;
+  color: var(--color-text-primary);
+  line-height: 1.4;
+}
+.insight-text strong { font-weight: 600; }
+
+/* --- TARJETA GRANDE DE SEO --- */
+.seo-card {
+  grid-column: 1 / -1; /* Ocupa todo el ancho */
+}
+@media (min-width: 992px) {
+  .content-grid {
+    grid-template-columns: 1fr 1fr; /* Dos columnas en pantallas medianas */
+  }
+  .seo-card {
+    grid-column: span 2; /* Abarca las dos columnas */
+  }
 }
 
-.loading-message, .no-data-message {
-  text-align: center;
-  padding: 2rem;
-  color: rgba(255, 255, 255, 0.7);
-  font-style: italic;
-}
-
-.seo-table {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.seo-table table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-}
-
+.seo-table-container { width: 100%; overflow-x: auto; }
+.seo-table { width: 100%; border-collapse: collapse; }
 .seo-table th, .seo-table td {
-  padding: 0.75rem 1rem;
-  text-align: left;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 1rem; text-align: left;
+  border-bottom: 1px solid var(--color-border);
   white-space: nowrap;
 }
-
 .seo-table th {
-  color: rgba(255, 255, 255, 0.8);
-  font-weight: 600;
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: var(--color-text-secondary); font-weight: 600;
+  font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;
 }
-
-.seo-table td {
-  color: #ffffff;
-  font-size: 0.9rem;
-}
+.keyword-cell { font-weight: 500; color: var(--color-text-primary); }
 
 .position-badge {
-  display: inline-block;
-  padding: 0.3rem 0.6rem;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  font-size: 0.8rem;
-  text-align: center;
+  display: inline-block; padding: 0.3rem 0.8rem;
+  border-radius: 99px; font-weight: 600; font-size: 0.85rem;
+}
+.position-badge.excellent { background-color: rgba(22, 163, 74, 0.15); color: #16a34a; }
+.position-badge.good { background-color: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.position-badge.average { background-color: rgba(249, 115, 22, 0.15); color: #f97316; }
+.position-badge.poor { background-color: rgba(220, 38, 38, 0.15); color: #dc2626; }
+
+.change-indicator { display: inline-flex; align-items: center; gap: 0.25rem; font-weight: 600; }
+.change-indicator.positive { color: #16a34a; }
+.change-indicator.negative { color: #dc2626; }
+.change-indicator.neutral { color: var(--color-text-secondary); }
+
+.no-data-message {
+  text-align: center; padding: 3rem; color: var(--color-text-secondary);
+  font-style: italic; flex-grow: 1; display: flex;
+  align-items: center; justify-content: center;
 }
 
-.position-badge.excellent {
-  background-color: rgba(146, 208, 0, 0.2);
-  color: #92d000;
-}
-
-.position-badge.good {
-  background-color: rgba(0, 128, 255, 0.2);
-  color: #0080ff;
-}
-
-.position-badge.average {
-  background-color: rgba(255, 165, 0, 0.2);
-  color: #ffa500;
-}
-
-.position-badge.poor {
-  background-color: rgba(255, 0, 0, 0.2);
-  color: #ff0000;
-}
-
-.change-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-weight: 500;
-  font-size: 0.85rem;
-}
-
-.change-indicator.positive {
-  color: #92d000;
-}
-
-.change-indicator.negative {
-  color: #ff0000;
-}
-
-/* Popover styles */
-.help-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
+/* --- POPOVER Y RESPONSIVIDAD --- */
 .help-popover {
-  position: fixed;
-  background-color: #3a3a3a;
-  color: #ffffff;
-  padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  max-width: 250px;
-  font-size: 0.875rem;
-  z-index: 1000;
-  pointer-events: none;
-  opacity: 0;
-  transform: scale(0.9);
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  transform-origin: top left;
-}
-
-.popover-fade-enter-active, .popover-fade-leave-active {
+  position: fixed; background-color: #2a2a2a; color: #fff;
+  padding: 0.5rem 1rem; border-radius: var(--border-radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); font-size: 0.875rem;
+  z-index: 1000; pointer-events: none; transform: translate(-50%, -100%);
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
-.popover-fade-enter-from, .popover-fade-leave-to {
-  opacity: 0;
-  transform: scale(0.9);
-}
-.popover-fade-enter-to, .popover-fade-leave-from {
-  opacity: 1;
-  transform: scale(1);
-}
+.popover-fade-enter-from, .popover-fade-leave-to { opacity: 0; transform: translate(-50%, -90%); }
 
-.popover-arrow {
-  position: absolute;
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 8px 8px 8px 0;
-  border-color: transparent #3a3a3a transparent transparent;
-  left: -8px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-/* Responsive adjustments */
-@media (max-width: 1023px) {
-  .dashboard-layout {
-    flex-direction: column;
-  }
-
-  .main-content {
-    margin-left: 0 !important;
-    width: 100%;
-    padding-top: 1rem;
-  }
-
-  .dashboard-layout.collapsed .main-content {
-    margin-left: 0 !important;
-  }
-  
-  .balance-card {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .balance-actions {
-    width: 100%;
-  }
-  
-  .action-btn {
-    flex-grow: 1;
-    justify-content: center;
-  }
-}
-
-@media (max-width: 640px) {
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .header-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-  
-  .refresh-btn {
-    flex-grow: 1;
-    justify-content: center;
-  }
+@media (max-width: 767px) {
+  .page-content-wrapper { padding: 1.5rem 1rem; }
+  .welcome-title { font-size: 1.75rem; }
+  .welcome-subtitle { font-size: 1rem; }
+  .content-grid { grid-template-columns: 1fr; }
+  .balance-card, .insight-card { flex-direction: column; align-items: flex-start; }
 }
 </style>

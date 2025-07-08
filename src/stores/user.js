@@ -1,21 +1,19 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '@/lib/supabaseClient'
-import { v4 as uuidv4 } from 'uuid'
 
 export const useUserStore = defineStore('user', () => {
   // --- STATE ---
-  // Estos son los datos reactivos que guardaremos globalmente.
-  const id = ref(null) // ID de la tabla 'clientes'
-  const authId = ref(null) // ID de Supabase Auth
+  const clientId = ref(null) // <-- CAMBIO: Renombrado de 'id' a 'clientId' para mayor claridad
+  const authId = ref(null)
   const email = ref('')
   const name = ref('')
   const avatarUrl = ref('')
+  const balance = ref(0) // <-- CAMBIO: Añadido estado para el saldo
 
   // --- GETTERS ---
-  // Propiedades computadas que derivan del estado.
   const initials = computed(() => {
-    if (!name.value) return 'CL'
+    if (!name.value) return '' // Devuelve vacío si no hay nombre para evitar 'CL'
     return name.value
       .split(' ')
       .map(part => part[0])
@@ -25,8 +23,6 @@ export const useUserStore = defineStore('user', () => {
   })
 
   // --- ACTIONS ---
-  // Funciones que modifican el estado. Aquí va toda la lógica de Supabase.
-
   async function fetchProfile() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -35,24 +31,27 @@ export const useUserStore = defineStore('user', () => {
       authId.value = user.id
       email.value = user.email
 
+      // CAMBIO: Añadimos 'saldo' a la consulta
       const { data: clientData, error } = await supabase
         .from('clientes')
-        .select('id, empresa, avatar_url')
+        .select('id, empresa, saldo, avatar_url') 
         .eq('auth_id', user.id)
         .single()
       
       if (error && error.code !== 'PGRST116') throw error
 
       if (clientData) {
-        id.value = clientData.id
+        clientId.value = clientData.id // <-- CAMBIO: Se asigna a 'clientId'
         name.value = clientData.empresa || ''
         avatarUrl.value = clientData.avatar_url || ''
+        balance.value = clientData.saldo || 0 // <-- CAMBIO: Asignamos el saldo
       }
     } catch (error) {
       console.error('Error al cargar el perfil en el store:', error.message)
     }
   }
 
+  // Las demás funciones no necesitan cambios, pero las dejamos por consistencia
   async function updateProfileName(newName) {
     if (!authId.value) return
     const { error } = await supabase
@@ -60,7 +59,7 @@ export const useUserStore = defineStore('user', () => {
       .upsert({ auth_id: authId.value, empresa: newName }, { onConflict: 'auth_id' })
     
     if (error) throw error
-    name.value = newName // Actualizamos el estado local
+    name.value = newName
   }
 
   async function updateAvatar(newUrl) {
@@ -71,15 +70,17 @@ export const useUserStore = defineStore('user', () => {
       .eq('auth_id', authId.value)
 
     if (error) throw error
-    avatarUrl.value = newUrl // Actualizamos el estado local
+    avatarUrl.value = newUrl
   }
 
+  // CAMBIO: Exponemos 'clientId' y 'balance'
   return {
-    id,
+    clientId, 
     authId,
     email,
     name,
     avatarUrl,
+    balance,
     initials,
     fetchProfile,
     updateProfileName,
