@@ -24,8 +24,6 @@ const route = useRoute();
 
 const pageTitle = computed(() => route.meta.title || 'Dashboard');
 
-// La lógica de `isMobile` y `mainContentStyle` se elimina, ahora se controla 100% con CSS.
-
 const handleSidebarToggle = (event) => {
   isCollapsed.value = event.detail;
 };

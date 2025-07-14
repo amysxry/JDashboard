@@ -1,4 +1,5 @@
 // supabase/functions/fetch-woocommerce-data/index.ts
+// VERSIÓN 3: A PRUEBA DE FALLOS - OBTENIENDO PEDIDOS DIRECTAMENTE
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -9,26 +10,32 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  console.log("--- Iniciando fetch-woocommerce-data (Modo Directo) ---");
+
   try {
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     const { data: clients, error: clientsError } = await supabaseAdmin
       .from('clientes')
-      .select('id, empresa, api_credentials(access_token, refresh_token, extra_data)')
+      .select('id, empresa, api_credentials!inner(access_token, refresh_token, extra_data)')
       .eq('api_credentials.platform', 'woocommerce');
 
     if (clientsError) throw clientsError;
+    if (!clients || clients.length === 0) {
+      console.log("No se encontraron clientes con credenciales de 'woocommerce'.");
+      return new Response(JSON.stringify({ message: 'No clients to process.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
+    }
 
-    const logs = [];
+    console.log(`Clientes encontrados para procesar: ${clients.length}`);
+
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 45); // Rango de 45 días
 
     for (const client of clients) {
-      if (!client.api_credentials || client.api_credentials.length === 0) {
-        logs.push(`Cliente ${client.empresa} no tiene credenciales de WooCommerce. Saltando.`);
-        continue;
-      }
+      console.log(`Procesando cliente: ${client.empresa}`);
 
       const wcCreds = client.api_credentials[0];
       const siteUrl = wcCreds.extra_data?.url;
@@ -36,66 +43,89 @@ serve(async (req) => {
       const consumerSecret = wcCreds.refresh_token;
 
       if (!siteUrl || !consumerKey || !consumerSecret) {
-        logs.push(`Credenciales incompletas para el cliente ${client.empresa}. Saltando.`);
+        console.warn(`Credenciales incompletas para ${client.empresa}. Saltando.`);
         continue;
       }
+      
+      let allOrders = [];
+      let page = 1;
+      let hasMorePages = true;
 
-      const salesReportUrl = `${siteUrl}/wp-json/wc/v3/reports/sales?period=month`;
-      const salesResponse = await fetch(salesReportUrl, {
-        headers: { 'Authorization': `Basic ${btoa(`${consumerKey}:${consumerSecret}`)}` }
-      });
-
-      if (!salesResponse.ok) {
-         logs.push(`Error al obtener ventas para ${client.empresa}: ${await salesResponse.text()}`);
-         continue;
-      }
-
-      const salesData = await salesResponse.json();
-
-      // --- LÓGICA DE PROCESAMIENTO CORREGIDA ---
-      // Verificamos si la respuesta tiene el formato esperado
-      if (!salesData || salesData.length === 0 || !salesData[0].totals) {
-        logs.push(`Respuesta de WooCommerce para ${client.empresa} no tiene el formato esperado o no contiene datos.`);
-        continue;
-      }
-
-      // Extraemos el objeto `totals` que contiene los datos por día
-      const dailyTotals = salesData[0].totals;
-
-      // Convertimos el objeto de totales en un array que nuestra base de datos pueda entender
-      const salesToUpsert = Object.keys(dailyTotals).map(dateString => {
-        const dailyReport = dailyTotals[dateString];
-        return {
-          cliente_id: client.id,
-          date: dateString, // La llave del objeto es la fecha
-          total_sales: dailyReport.sales,
-          net_sales: dailyReport.sales, // La API no desglosa net_sales por día, usamos el total como aproximación
-          total_orders: dailyReport.orders
-        };
-      });
-
-      if (salesToUpsert.length === 0) {
-        logs.push(`No se encontraron datos diarios para procesar para ${client.empresa}.`);
-        continue;
-      }
+      // 1. OBTENER TODOS LOS PEDIDOS COMPLETADOS (CON PAGINACIÓN)
+      while (hasMorePages) {
+        const ordersUrl = `${siteUrl}/wp-json/wc/v3/orders?status=completed&after=${startDate.toISOString()}&per_page=100&page=${page}`;
         
+        const response = await fetch(ordersUrl, {
+          headers: { 'Authorization': `Basic ${btoa(`${consumerKey}:${consumerSecret}`)}` }
+        });
+
+        if (!response.ok) {
+          console.error(`Error al obtener pedidos para ${client.empresa} en página ${page}: ${await response.text()}`);
+          hasMorePages = false; // Detener si hay un error
+          continue;
+        }
+
+        const ordersBatch = await response.json();
+        
+        if (ordersBatch.length > 0) {
+          allOrders.push(...ordersBatch);
+          page++;
+        } else {
+          hasMorePages = false; // No hay más pedidos, detener el bucle
+        }
+      }
+      
+      console.log(`Se encontraron ${allOrders.length} pedidos completados para ${client.empresa}.`);
+
+      if (allOrders.length === 0) {
+        console.log(`No hay pedidos nuevos para procesar para ${client.empresa}.`);
+        continue;
+      }
+
+      // 2. AGRUPAR Y SUMAR LOS PEDIDOS POR DÍA
+      const dailyTotals = allOrders.reduce((acc, order) => {
+        const orderDate = order.date_created.split('T')[0]; // Obtiene 'YYYY-MM-DD'
+        
+        if (!acc[orderDate]) {
+          acc[orderDate] = { total_sales: 0, net_sales: 0, total_orders: 0 };
+        }
+        
+        acc[orderDate].total_sales += parseFloat(order.total);
+        acc[orderDate].net_sales += (parseFloat(order.total) - parseFloat(order.total_tax) - parseFloat(order.shipping_total));
+        acc[orderDate].total_orders += 1;
+        
+        return acc;
+      }, {});
+
+      // 3. PREPARAR LOS DATOS PARA GUARDAR EN SUPABASE
+      const salesToUpsert = Object.keys(dailyTotals).map(dateString => ({
+          cliente_id: client.id,
+          date: dateString,
+          total_sales: dailyTotals[dateString].total_sales,
+          net_sales: dailyTotals[dateString].net_sales,
+          total_orders: dailyTotals[dateString].total_orders
+      }));
+      
+      console.log(`Se procesaron ${salesToUpsert.length} días con ventas para ${client.empresa}.`);
+
+      // 4. GUARDAR EN LA BASE DE DATOS
       const { error: salesUpsertError } = await supabaseAdmin
         .from('wc_sales_cache')
         .upsert(salesToUpsert, { onConflict: 'cliente_id, date' });
 
       if (salesUpsertError) {
-        logs.push(`Error al guardar ventas para ${client.empresa}: ${salesUpsertError.message}`);
+        console.error(`Error al guardar ventas para ${client.empresa}: ${salesUpsertError.message}`);
       } else {
-        logs.push(`Ventas de ${client.empresa} para ${salesToUpsert.length} días guardadas correctamente.`);
+        console.log(`Ventas de ${client.empresa} guardadas correctamente.`);
       }
     }
 
-    return new Response(JSON.stringify({ status: 'ok', logs }), {
+    return new Response(JSON.stringify({ status: 'ok', message: 'Proceso completado.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
     });
 
   } catch (error) {
+    console.error("Error fatal en la función:", error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
