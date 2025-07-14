@@ -174,7 +174,7 @@ onUnmounted(() => {
   justify-content: space-between;
   padding: 3rem 0.75rem;
   background-color: var(--color-bg-accent); 
-  height: 69px;
+  height: var(--header-height); 
   box-sizing: border-box;
   flex-shrink: 0;
   border-bottom: 0px solid var(--color-border);
@@ -186,7 +186,8 @@ onUnmounted(() => {
 }
 
 .logo {
-  height: 45px;
+  width: 230px;
+  height: auto !important;
   transition: all 0.3s ease;
 }
 

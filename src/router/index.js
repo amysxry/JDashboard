@@ -28,7 +28,7 @@ const routes = [
     component: DashboardLayout, // El layout es el componente padre
     meta: { requiresAuth: true }, // ESTO PROTEGE A TODAS LAS RUTAS HIJAS
     children: [
-      { path: 'dashboard', name: 'Dashboard', component: Dashboard, meta: { title: 'Dashboard Principal' } },
+      { path: 'dashboard', name: 'Dashboard', component: Dashboard, meta: { title: 'ㅤ' } },
       { path: 'analytics', name: 'Analytics', component: GA4, meta: { title: 'Google Analytics 4' } },
       { path: 'ads', name: 'Ads', component: Ads, meta: { title: 'Google Ads' } },
       { path: 'wordpress', name: 'WordPress', component: WordPress, meta: { title: 'WordPress' } },
