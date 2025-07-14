@@ -1,5 +1,5 @@
 // supabase/functions/fetch-google-analytics-data/index.ts
-// VERSIÓN FINAL v2 - CON CORRECCIÓN EN EL FILTRO DE CONVERSIONES
+// VERSIÓN CORREGIDA - CON TODAS LAS TAREAS DE CACHÉ
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
@@ -60,6 +60,7 @@ serve(async (req)=>{
         for (const client of clients) {
             try {
                 const propertyId = `properties/${client.ga_property_id}`;
+                const dateRange30Days = { startDate: '30daysAgo', endDate: 'today' };
 
                 // --- TAREA 1: OBTENER MÉTRICAS DIARIAS GENERALES ---
                 console.log(`[Cliente ${client.id}] Obteniendo métricas diarias generales...`);
@@ -69,7 +70,7 @@ serve(async (req)=>{
                         { name: 'bounceRate' }, { name: 'averageSessionDuration' }, { name: 'screenPageViews' }
                     ],
                     dimensions: [{ name: 'date' }],
-                    dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }]
+                    dateRanges: [dateRange30Days]
                 };
 
                 const responseMetrics = await fetch(`https://analyticsdata.googleapis.com/v1beta/${propertyId}:runReport`, {
@@ -97,7 +98,7 @@ serve(async (req)=>{
                             .from('ga_metrics_cache')
                             .upsert(recordsToUpsert, { onConflict: 'cliente_id,date' });
                         if (upsertError) throw upsertError;
-                        console.log(`[Cliente ${client.id}] TAREA 1 COMPLETADA: Métricas diarias guardadas en 'ga_metrics_cache'.`);
+                        console.log(`[Cliente ${client.id}] TAREA 1 COMPLETADA: Métricas diarias guardadas.`);
                     }
                 }
 
@@ -106,18 +107,13 @@ serve(async (req)=>{
                 const conversionsRequestBody = {
                     metrics: [{ name: 'conversions' }],
                     dimensions: [{ name: 'date' }, { name: 'eventName' }],
-                    dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
-                    // --- INICIO DE LA CORRECCIÓN ---
+                    dateRanges: [dateRange30Days],
                     dimensionFilter: {
                         filter: {
                             fieldName: 'isConversionEvent',
-                            stringFilter: {
-                                matchType: 'EXACT',
-                                value: 'true'
-                            }
+                            stringFilter: { matchType: 'EXACT', value: 'true' }
                         }
                     }
-                    // --- FIN DE LA CORRECCIÓN ---
                 };
 
                 const responseConversions = await fetch(`https://analyticsdata.googleapis.com/v1beta/${propertyId}:runReport`, {
@@ -125,7 +121,6 @@ serve(async (req)=>{
                 });
 
                 if (!responseConversions.ok) {
-                    // Este error ya no debería aparecer con el filtro corregido
                     console.error(`[Cliente ${client.id}] Error en desglose de conversiones:`, await responseConversions.json());
                 } else {
                     const gaConversionsData = await responseConversions.json();
@@ -142,11 +137,103 @@ serve(async (req)=>{
                             .from('ga_conversions_cache')
                             .upsert(conversionsToUpsert, { onConflict: 'cliente_id,date,conversion_name' });
                         if (upsertError) throw upsertError;
-                        console.log(`[Cliente ${client.id}] TAREA 2 COMPLETADA: Desglose de conversiones guardado en 'ga_conversions_cache'.`);
-                    } else {
-                        console.log(`[Cliente ${client.id}] TAREA 2: No se encontraron conversiones desglosadas para guardar.`);
+                        console.log(`[Cliente ${client.id}] TAREA 2 COMPLETADA: Desglose de conversiones guardado.`);
                     }
                 }
+
+                // --- INICIA TAREA 3: OBTENER USUARIOS POR DISPOSITIVO ---
+                console.log(`[Cliente ${client.id}] Obteniendo usuarios por dispositivo...`);
+                const deviceRequestBody = {
+                    metrics: [{ name: 'activeUsers' }],
+                    dimensions: [{ name: 'date' }, { name: 'deviceCategory' }],
+                    dateRanges: [dateRange30Days],
+                };
+                const responseDevice = await fetch(`https://analyticsdata.googleapis.com/v1beta/${propertyId}:runReport`, {
+                    method: 'POST', headers, body: JSON.stringify(deviceRequestBody)
+                });
+                if (!responseDevice.ok) {
+                    console.error(`[Cliente ${client.id}] Error en usuarios por dispositivo:`, await responseDevice.json());
+                } else {
+                    const gaDeviceData = await responseDevice.json();
+                    const deviceRows = gaDeviceData.rows || [];
+                    const deviceRecordsToUpsert = deviceRows.map((row) => ({
+                        cliente_id: client.id,
+                        date: `${row.dimensionValues[0].value.substring(0, 4)}-${row.dimensionValues[0].value.substring(4, 6)}-${row.dimensionValues[0].value.substring(6, 8)}`,
+                        device: row.dimensionValues[1].value, // 'Desktop', 'Mobile', 'Tablet'
+                        users: parseInt(row.metricValues[0].value, 10),
+                    }));
+                    if (deviceRecordsToUpsert.length > 0) {
+                        const { error: upsertError } = await supabaseAdmin
+                            .from('ga_device_cache')
+                            .upsert(deviceRecordsToUpsert, { onConflict: 'cliente_id,date,device' });
+                        if (upsertError) throw upsertError;
+                        console.log(`[Cliente ${client.id}] TAREA 3 COMPLETADA: Datos de dispositivos guardados.`);
+                    }
+                }
+                // --- FIN TAREA 3 ---
+
+                // --- INICIA TAREA 4: OBTENER USUARIOS POR CANAL ---
+                console.log(`[Cliente ${client.id}] Obteniendo usuarios por canal...`);
+                const channelRequestBody = {
+                    metrics: [{ name: 'activeUsers' }],
+                    dimensions: [{ name: 'date' }, { name: 'sessionDefaultChannelGroup' }],
+                    dateRanges: [dateRange30Days],
+                };
+                const responseChannel = await fetch(`https://analyticsdata.googleapis.com/v1beta/${propertyId}:runReport`, {
+                    method: 'POST', headers, body: JSON.stringify(channelRequestBody)
+                });
+                if (!responseChannel.ok) {
+                    console.error(`[Cliente ${client.id}] Error en usuarios por canal:`, await responseChannel.json());
+                } else {
+                    const gaChannelData = await responseChannel.json();
+                    const channelRows = gaChannelData.rows || [];
+                    const channelRecordsToUpsert = channelRows.map((row) => ({
+                        cliente_id: client.id,
+                        date: `${row.dimensionValues[0].value.substring(0, 4)}-${row.dimensionValues[0].value.substring(4, 6)}-${row.dimensionValues[0].value.substring(6, 8)}`,
+                        channel: row.dimensionValues[1].value,
+                        users: parseInt(row.metricValues[0].value, 10),
+                    }));
+                    if (channelRecordsToUpsert.length > 0) {
+                        const { error: upsertError } = await supabaseAdmin
+                            .from('ga_channel_cache')
+                            .upsert(channelRecordsToUpsert, { onConflict: 'cliente_id,date,channel' });
+                        if (upsertError) throw upsertError;
+                        console.log(`[Cliente ${client.id}] TAREA 4 COMPLETADA: Datos de canales guardados.`);
+                    }
+                }
+                // --- FIN TAREA 4 ---
+
+                // --- INICIA TAREA 5: OBTENER DATOS DE PÁGINAS ---
+                console.log(`[Cliente ${client.id}] Obteniendo datos de páginas...`);
+                const pagesRequestBody = {
+                    metrics: [{ name: 'screenPageViews' }, { name: 'averageSessionDuration' }],
+                    dimensions: [{ name: 'date' }, { name: 'pagePath' }],
+                    dateRanges: [dateRange30Days],
+                };
+                const responsePages = await fetch(`https://analyticsdata.googleapis.com/v1beta/${propertyId}:runReport`, {
+                    method: 'POST', headers, body: JSON.stringify(pagesRequestBody)
+                });
+                if (!responsePages.ok) {
+                    console.error(`[Cliente ${client.id}] Error en datos de páginas:`, await responsePages.json());
+                } else {
+                    const gaPagesData = await responsePages.json();
+                    const pagesRows = gaPagesData.rows || [];
+                    const pagesRecordsToUpsert = pagesRows.map((row) => ({
+                        cliente_id: client.id,
+                        date: `${row.dimensionValues[0].value.substring(0, 4)}-${row.dimensionValues[0].value.substring(4, 6)}-${row.dimensionValues[0].value.substring(6, 8)}`,
+                        page_path: row.dimensionValues[1].value,
+                        page_views: parseInt(row.metricValues[0].value, 10),
+                        avg_time_on_page: parseFloat(row.metricValues[1].value),
+                    }));
+                    if (pagesRecordsToUpsert.length > 0) {
+                        const { error: upsertError } = await supabaseAdmin
+                            .from('ga_pages_cache')
+                            .upsert(pagesRecordsToUpsert, { onConflict: 'cliente_id,date,page_path' });
+                        if (upsertError) throw upsertError;
+                        console.log(`[Cliente ${client.id}] TAREA 5 COMPLETADA: Datos de páginas guardados.`);
+                    }
+                }
+                // --- FIN TAREA 5 ---
 
                 processedClients.push(client.id);
 
