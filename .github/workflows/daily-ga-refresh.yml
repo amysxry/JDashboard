@@ -1,5 +1,5 @@
-# Nombre del workflow, ahora refleja que actualiza ambas plataformas.
-name: Daily Data Refresh (GA & WooCommerce)
+# Nombre del workflow, ahora refleja que actualiza las tres plataformas.
+name: Daily Data Refresh (GA, WooCommerce & Asana)
 
 on:
   schedule:
@@ -9,7 +9,7 @@ on:
   # Esto permite que lo puedas ejecutar manualmente desde la pestaña "Actions" de GitHub.
   workflow_dispatch:
 
-# Aquí definimos los trabajos que se ejecutarán.
+# Aquí definimos los trabajos que se ejecutarán en paralelo.
 jobs:
   # --- TRABAJO 1: ACTUALIZAR GOOGLE ANALYTICS ---
   invoke_ga_function:
@@ -50,6 +50,28 @@ jobs:
           echo "Invocando la función de WooCommerce..."
 
           # Llama a la segunda función de la misma manera.
+          curl -X POST \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+          "${FUNCTION_URL}"
+
+  # --- TRABAJO 3: ACTUALIZAR ASANA (NUEVO) ---
+  invoke_asana_function:
+    name: Invoke Asana Function
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke Asana Supabase Edge Function
+        env:
+          # Reutilizamos los mismos secrets una vez más.
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          # Construye la URL de la función de Asana
+          FUNCTION_URL="https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/fetch-asana-data"
+
+          echo "Invocando la función de Asana..."
+
+          # Llama a la tercera función.
           curl -X POST \
           -H "Content-Type: application/json" \
           -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
