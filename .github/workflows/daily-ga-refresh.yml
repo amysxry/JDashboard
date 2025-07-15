@@ -1,37 +1,78 @@
-name: Daily GA Data Refresh
+# Nombre del workflow, ahora refleja que actualiza las tres plataformas.
+name: Daily Data Refresh (GA, WooCommerce & Asana)
 
 on:
   schedule:
-    # Ejecutar todos los días a las 3:30 AM UTC
-    # (Esto es 8:30 PM PDT del día anterior en Tijuana.
-    # Puedes ajustar la hora UTC si prefieres otra hora PDT para la ejecución.)
-    # Consulta https://crontab.guru/ para probar expresiones cron.
+    # Se ejecuta todos los días a las 3:30 AM UTC, como lo tenías configurado.
     - cron: '30 3 * * *'
-  workflow_dispatch: # Permite ejecutar manualmente desde la interfaz de GitHub Actions
+  
+  # Esto permite que lo puedas ejecutar manualmente desde la pestaña "Actions" de GitHub.
+  workflow_dispatch:
 
+# Aquí definimos los trabajos que se ejecutarán en paralelo.
 jobs:
-  invoke_function:
+  # --- TRABAJO 1: ACTUALIZAR GOOGLE ANALYTICS ---
+  invoke_ga_function:
+    name: Invoke Google Analytics Function
     runs-on: ubuntu-latest
     steps:
-      - name: Get Function URL
-        id: get_url
-        run: |
-          # Esto obtiene la URL de la función desplegada.
-          # Necesitarás tu SUPABASE_PROJECT_REF aquí.
-          # Puedes encontrar tu PROJECT_REF en la URL de tu panel de Supabase:
-          # https://app.supabase.com/project/YOUR_PROJECT_REF/dashboard
-          PROJECT_REF="${{ secrets.SUPABASE_PROJECT_REF }}"
-          FUNCTION_SLUG="fetch-google-analytics-data" # El nombre de tu función
-
-          FUNCTION_URL="https://${PROJECT_REF}.supabase.co/functions/v1/${FUNCTION_SLUG}"
-          echo "FUNCTION_URL=${FUNCTION_URL}" >> $GITHUB_ENV # Guarda la URL como variable de entorno
+      - name: Invoke GA Supabase Edge Function
         env:
-          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }} # Asegúrate de crear este secreto de GitHub
-
-      - name: Invoke Supabase Edge Function
+          # Estos son los "secrets" que debes tener configurados en GitHub.
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          # Usa curl para hacer una solicitud POST a tu Edge Function
-          # Ya no incluimos el secreto en los headers
+          # Construye la URL de la función de Google Analytics
+          FUNCTION_URL="https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/fetch-google-analytics-data"
+          
+          echo "Invocando la función de Google Analytics..."
+          
+          # Llama a la función usando curl, incluyendo la llave de servicio para autorización.
           curl -X POST \
           -H "Content-Type: application/json" \
-          ${{ env.FUNCTION_URL }}
+          -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+          "${FUNCTION_URL}"
+
+  # --- TRABAJO 2: ACTUALIZAR WOOCOMMERCE ---
+  invoke_wc_function:
+    name: Invoke WooCommerce Function
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke WooCommerce Supabase Edge Function
+        env:
+          # Reutilizamos los mismos secrets.
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          # Construye la URL de la función de WooCommerce
+          FUNCTION_URL="https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/fetch-woocommerce-data"
+
+          echo "Invocando la función de WooCommerce..."
+
+          # Llama a la segunda función de la misma manera.
+          curl -X POST \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+          "${FUNCTION_URL}"
+
+  # --- TRABAJO 3: ACTUALIZAR ASANA (NUEVO) ---
+  invoke_asana_function:
+    name: Invoke Asana Function
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke Asana Supabase Edge Function
+        env:
+          # Reutilizamos los mismos secrets una vez más.
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          # Construye la URL de la función de Asana
+          FUNCTION_URL="https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/fetch-asana-data"
+
+          echo "Invocando la función de Asana..."
+
+          # Llama a la tercera función.
+          curl -X POST \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+          "${FUNCTION_URL}"
