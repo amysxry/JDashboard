@@ -91,7 +91,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { RefreshCw, AlertTriangle, ArrowUpIcon, ArrowDownIcon } from 'lucide-vue-next';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { Line } from 'vue-chartjs';
-import InfoTooltip from '@/components/InfoToolTip.vue';
+import InfoTooltip from '@/components/InfoTooltip.vue';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
