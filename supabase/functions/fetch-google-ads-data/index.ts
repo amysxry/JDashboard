@@ -1,4 +1,6 @@
 // supabase/functions/fetch-google-ads-data/index.ts
+// VERSIÓN CORREGIDA: Actualizado a la v19 de la API de Google Ads
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
@@ -32,13 +34,11 @@ serve(async (req) => {
     const authClient = await getAuthClient();
     const googleAccessToken = (await authClient.getAccessToken()).token;
 
-    // Obtener el ID de desarrollador de las variables de entorno
     const developerToken = Deno.env.get('GOOGLE_ADS_DEVELOPER_TOKEN');
     if (!developerToken) {
       throw new Error('GOOGLE_ADS_DEVELOPER_TOKEN is not set.');
     }
 
-    // Obtener el ID de la cuenta de administrador (MCC)
     const { data: managerCreds } = await supabaseAdmin
       .from('api_credentials')
       .select('extra_data')
@@ -59,7 +59,7 @@ serve(async (req) => {
     console.log(`Encontrados ${clients.length} clientes con ID de Google Ads.`);
 
     for (const client of clients) {
-      const customerId = client.ads_customer_id.replace(/-/g, ''); // Remover guiones
+      const customerId = client.ads_customer_id.replace(/-/g, '');
       console.log(`Procesando cliente ID: ${customerId}`);
 
       const query = `
@@ -68,15 +68,13 @@ serve(async (req) => {
           metrics.impressions, 
           metrics.clicks, 
           metrics.cost_micros, 
-          metrics.conversions,
-          metrics.ctr,
-          metrics.average_cpc
+          metrics.conversions
         FROM customer 
         WHERE segments.date DURING LAST_30_DAYS`;
       
       const requestBody = { query };
 
-      const response = await fetch(`https://googleads.googleapis.com/v17/customers/${customerId}/googleAds:searchStream`, {
+      const response = await fetch(`https://googleads.googleapis.com/v19/customers/${customerId}/googleAds:searchStream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -106,8 +104,6 @@ serve(async (req) => {
         clicks: row.metrics.clicks,
         cost_micros: row.metrics.costMicros,
         conversions: row.metrics.conversions,
-        ctr: row.metrics.ctr,
-        cpc_micros: row.metrics.averageCpc,
       }));
 
       if (recordsToUpsert.length > 0) {
