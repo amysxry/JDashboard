@@ -22,23 +22,23 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'assets/pwa-192x192.png', // Asegúrate que la ruta sea correcta
+            src: 'assets/192x192.png', // Asegúrate que la ruta sea correcta
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: 'assets/pwa-512x512.png', // Asegúrate que la ruta sea correcta
+            src: 'assets/512x512.png', // Asegúrate que la ruta sea correcta
             sizes: '512x512',
             type: 'image/png'
           },
           {
-            src: 'assets/pwa-512x512.png',
+            src: 'assets/512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: 'assets/pwa-512x512.png',
+            src: 'assets/512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'
