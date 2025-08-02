@@ -261,24 +261,26 @@ onUnmounted(() => clearTimeout(messageTimeout));
 </script>
 
 <style scoped>
-/* Variables de Diseño (ajusta estos colores para que coincidan con tu paleta) */
+/* Variables de Diseño (consistentes con las demás vistas) */
 :root {
   --color-primary: #92d000;
   --color-primary-rgb: 146, 208, 0;
-  --color-bg-main: #121212;
-  --color-bg-card: #1C1C1E;
-  --color-border: #2D2D2F;
-  --color-text-primary: #EAEAEA;
-  --color-text-secondary: #A0A0A0;
-  --color-text-placeholder: #6E6E73;
-  --color-danger: #FF453A;
+  --color-bg-main: #161817;
+  --color-bg-card: #2a2a2a;
+  --color-border: #3b3b3b;
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #e0e0e0;
+  --color-text-muted: #aaa;
+  --color-danger: #ff6b6b;
+  --color-surface: #3b3b3b;
+  --color-success: #22c55e;
 }
 
 .settings-page-content {
   padding: 1.5rem;
   width: 100%;
   box-sizing: border-box;
-  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+  background: #161817;
   min-height: 100vh;
 }
 
@@ -288,22 +290,19 @@ onUnmounted(() => clearTimeout(messageTimeout));
 
 /* Diseño de la Tarjeta de Perfil */
 .profile-card {
-  background: linear-gradient(135deg, #2a2a2a 0%, #323232 100%);
-  border-radius: 1.5rem;
-  border: 1px solid #404040;
-  box-shadow: 
-    0 20px 40px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background-color: #2a2a2a;
+  border-radius: 1rem;
+  border: 1px solid #3b3b3b;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  backdrop-filter: blur(10px);
 }
 
 .card-header {
   padding: 2rem 2.5rem 1.5rem 2.5rem;
-  border-bottom: 1px solid #404040;
-  background: linear-gradient(135deg, rgba(146, 208, 0, 0.05) 0%, transparent 100%);
+  border-bottom: 1px solid #3b3b3b;
+  background-color: #2a2a2a;
 }
 
 .card-title-container {
@@ -337,6 +336,7 @@ onUnmounted(() => clearTimeout(messageTimeout));
   display: flex;
   gap: 4rem;
   padding: 2.5rem;
+  background-color: #2a2a2a;
 }
 
 .avatar-column {
@@ -392,7 +392,7 @@ onUnmounted(() => clearTimeout(messageTimeout));
 }
 
 .profile-initials.uploading {
-  background: linear-gradient(135deg, #404040, #4a4a4a);
+  background: linear-gradient(135deg, #3b3b3b, #4a4a4a);
 }
 
 .spinner {
@@ -434,7 +434,7 @@ onUnmounted(() => clearTimeout(messageTimeout));
 .detail-label {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #b3b3b3;
+  color: #aaa;
   letter-spacing: 0.025em;
 }
 
@@ -445,13 +445,13 @@ onUnmounted(() => clearTimeout(messageTimeout));
 .profile-input {
   width: 100%;
   padding: 1rem 1.25rem;
-  background: linear-gradient(135deg, #3a3a3a 0%, #404040 100%);
-  border: 2px solid #505050;
+  background-color: #3b3b3b;
+  border: 1px solid #92d000;
   border-radius: 0.75rem;
   color: #ffffff;
   font-size: 1.05rem;
   transition: all 0.3s ease;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .profile-input::placeholder {
@@ -463,7 +463,7 @@ onUnmounted(() => clearTimeout(messageTimeout));
   border-color: #92d000;
   box-shadow: 
     0 0 0 4px rgba(146, 208, 0, 0.2),
-    inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    0 2px 4px rgba(0, 0, 0, 0.1);
   transform: translateY(-1px);
 }
 
@@ -488,12 +488,12 @@ onUnmounted(() => clearTimeout(messageTimeout));
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.25rem;
-  background: linear-gradient(135deg, #353535 0%, #3a3a3a 100%);
-  border: 2px solid #454545;
+  background-color: #3b3b3b;
+  border: 1px solid #444;
   border-radius: 0.75rem;
-  color: #b3b3b3;
+  color: #aaa;
   font-size: 1.05rem;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .email-text {
@@ -546,34 +546,34 @@ onUnmounted(() => clearTimeout(messageTimeout));
 }
 
 .action-btn.primary-action {
-  background: linear-gradient(135deg, #404040 0%, #4a4a4a 100%);
+  background-color: #3b3b3b;
   color: #ffffff;
-  border: 2px solid #505050;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border: 1px solid #92d000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .action-btn.primary-action:hover:not(.disabled) {
   border-color: #92d000;
-  background: linear-gradient(135deg, #4a4a4a 0%, #525252 100%);
+  background-color: #4a4a4a;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(146, 208, 0, 0.3);
+  box-shadow: 0 4px 8px rgba(146, 208, 0, 0.2);
 }
 
 .action-btn.danger-action {
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, rgba(255, 107, 107, 0.05) 100%);
+  background-color: rgba(255, 107, 107, 0.1);
   color: #ff6b6b;
-  border: 2px solid #ff6b6b;
+  border: 1px solid #ff6b6b;
 }
 
 .action-btn.danger-action:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.2) 0%, rgba(255, 107, 107, 0.1) 100%);
+  background-color: rgba(255, 107, 107, 0.2);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.3);
+  box-shadow: 0 4px 8px rgba(255, 107, 107, 0.2);
 }
 
 .card-footer {
-  background: linear-gradient(135deg, #353535 0%, #3a3a3a 100%);
-  border-top: 1px solid #454545;
+  background-color: #3b3b3b;
+  border-top: 1px solid #444;
   padding: 2rem 2.5rem;
 }
 
@@ -597,7 +597,7 @@ onUnmounted(() => clearTimeout(messageTimeout));
   background: linear-gradient(135deg, #92d000 0%, #7bb500 100%);
   color: #1a1a1a;
   box-shadow: 
-    0 8px 24px rgba(146, 208, 0, 0.4),
+    0 4px 8px rgba(146, 208, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
   letter-spacing: 0.025em;
 }
@@ -624,9 +624,9 @@ onUnmounted(() => clearTimeout(messageTimeout));
 
 .save-profile-btn:hover:not([disabled]) {
   background: linear-gradient(135deg, #7bb500 0%, #6aa000 100%);
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   box-shadow: 
-    0 12px 32px rgba(146, 208, 0, 0.5),
+    0 6px 12px rgba(146, 208, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
@@ -637,7 +637,7 @@ onUnmounted(() => clearTimeout(messageTimeout));
   box-shadow: none;
 }
 
-/* Mensajes Toast (sin cambios en la lógica) */
+/* Mensajes Toast */
 .toast-message {
   position: fixed;
   bottom: 2rem;
@@ -651,16 +651,18 @@ onUnmounted(() => clearTimeout(messageTimeout));
   min-width: 300px;
   text-align: center;
   animation: toastSlideIn 0.5s ease-out;
-  backdrop-filter: blur(10px);
 }
+
 .toast-message.success { 
   background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.4);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
 }
+
 .toast-message.error { 
   background: linear-gradient(135deg, #ff6b6b 0%, #ef4444 100%);
-  box-shadow: 0 8px 24px rgba(255, 107, 107, 0.4);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
 }
+
 @keyframes toastSlideIn {
   from {
     opacity: 0;
@@ -671,6 +673,7 @@ onUnmounted(() => clearTimeout(messageTimeout));
     transform: translateX(-50%) translateY(0);
   }
 }
+
 @keyframes spin { 
   to { transform: rotate(360deg); } 
 }
@@ -702,10 +705,6 @@ onUnmounted(() => clearTimeout(messageTimeout));
   
   .profile-initials {
     font-size: 2.25rem;
-  }
-  
-  .page-title {
-    font-size: 1.5rem;
   }
   
   .card-title {
