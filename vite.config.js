@@ -12,7 +12,7 @@ export default defineConfig({
         enabled: true 
       },
       manifest: {
-        name: 'Tu App JDashboard', 
+        name: 'JDashboard', 
         short_name: 'JDashboard',
         description: 'Panel integral para monitorear métricas digitales en tiempo real de tu agencia.',
         theme_color: '#1a1a1a', 
