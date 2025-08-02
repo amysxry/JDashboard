@@ -20,34 +20,39 @@ export default defineConfig({
         display: 'standalone',
         scope: '/',
         start_url: '/',
+        
+        // Agregamos el 'id'
+        id: '/', 
+        
         icons: [
           {
-            src: 'assets/192x192.png', // Asegúrate que la ruta sea correcta
+            // Ruta corregida: el archivo está directamente en 'public'
+            src: '/192x192.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: 'assets/512x512.png', // Asegúrate que la ruta sea correcta
+            src: '/512x512.png',
             sizes: '512x512',
             type: 'image/png'
           },
           {
-            src: 'assets/512x512.png',
+            src: '/512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: 'assets/512x512.png',
+            src: '/512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'
           }
-        ]
+        ],
+        
       }
     })
   ],
-  // Tu alias se mantiene igual, no hay que cambiar nada aquí
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')
