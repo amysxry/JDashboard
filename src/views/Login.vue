@@ -2,7 +2,7 @@
   <div class="login-page">
     <div class="branding-panel">
       <div class="branding-content">
-        <img src="@/assets/logo-jdashboard.png" alt="JDashboard Logo" class="logo" />
+        <img src="/logo-jdashboard.png" alt="JDashboard Logo" class="logo" />
         <h1 class="brand-title">JDashboard</h1>
         <p class="brand-subtitle">Tu centro de control digital</p>
       </div>
