@@ -2,26 +2,31 @@
   <div class="settings-page-content">
     <main class="config-main">
       <section class="profile-card">
-        
         <div class="card-header">
-          <h2 class="card-title">Perfil de la Empresa</h2>
-          <p class="card-subtitle">Actualiza la información y apariencia de tu perfil público.</p>
+          <div class="card-title-container">
+            <div class="title-section">
+              <h2 class="card-title">Perfil</h2>
+              <div class="title-underline"></div>
+            </div>
+          </div>
         </div>
 
         <div class="card-body">
           <div class="avatar-column">
             <div class="avatar-container">
-              <template v-if="profilePhotoUrl && !uploadingPhoto">
-                <img :src="profilePhotoUrl" alt="Foto de perfil" class="profile-photo" />
-              </template>
-              <template v-else-if="uploadingPhoto">
-                <div class="profile-initials uploading">
-                  <div class="spinner"></div>
-                </div>
-              </template>
-              <template v-else>
-                <div class="profile-initials">{{ getInitials(clientName) }}</div>
-              </template>
+              <div class="avatar-ring">
+                <template v-if="profilePhotoUrl && !uploadingPhoto">
+                  <img :src="profilePhotoUrl" alt="Foto de perfil" class="profile-photo" />
+                </template>
+                <template v-else-if="uploadingPhoto">
+                  <div class="profile-initials uploading">
+                    <div class="spinner"></div>
+                  </div>
+                </template>
+                <template v-else>
+                  <div class="profile-initials">{{ getInitials(clientName) }}</div>
+                </template>
+              </div>
             </div>
             <div class="avatar-actions">
               <label class="action-btn primary-action" :class="{ 'disabled': uploadingPhoto }">
@@ -48,32 +53,59 @@
 
           <div class="form-column">
             <div class="form-item">
-              <label for="client-name-input" class="detail-label">Nombre de la Empresa</label>
-              <input 
-                id="client-name-input"
-                type="text" 
-                v-model="editableClientName" 
-                class="profile-input" 
-                :disabled="savingProfile"
-                placeholder="Escribe el nombre de tu empresa"
-              />
+              <div class="label-container">
+                <label for="client-name-input" class="detail-label">Nombre de la Empresa</label>
+              </div>
+              <div class="input-wrapper">
+                <input 
+                  id="client-name-input"
+                  type="text" 
+                  v-model="editableClientName" 
+                  class="profile-input" 
+                  :disabled="savingProfile"
+                  placeholder="Escribe el nombre de tu empresa"
+                />
+                <div class="input-focus-line"></div>
+              </div>
             </div>
             <div class="form-item">
-              <label class="detail-label">Correo Electrónico</label>
-              <p class="profile-input-static">{{ clientEmail }}</p>
+              <div class="label-container">
+                <label class="detail-label">Correo Electrónico</label>
+              </div>
+              <div class="profile-input-static">
+                <span class="email-text">{{ clientEmail }}</span>
+                <div class="locked-badge">
+                  <svg class="lock-icon" viewBox="0 0 24 24" fill="none">
+                    <path d="M6 10V8C6 5.79086 7.79086 4 10 4H14C16.2091 4 18 5.79086 18 8V10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         <div class="card-footer">
-          <button 
-            @click="saveProfile" 
-            class="save-profile-btn" 
-            :disabled="savingProfile || !isProfileChanged"
-          >
-            <span v-if="!savingProfile">Guardar Cambios</span>
-            <span v-else>Guardando...</span>
-          </button>
+          <div class="save-section">
+            <button 
+              @click="saveProfile" 
+              class="save-profile-btn" 
+              :disabled="savingProfile || !isProfileChanged"
+            >
+              <span v-if="!savingProfile" class="btn-content">
+                <svg class="save-icon" viewBox="0 0 24 24" fill="none">
+                  <path d="M19 21H5C4.44772 21 4 20.5523 4 20V4C4 3.44772 4.44772 3 5 3H16L20 7V20C20 20.5523 19.5523 21 19 21Z" stroke="currentColor" stroke-width="2"/>
+                  <path d="M7 3V8H15" stroke="currentColor" stroke-width="2"/>
+                  <path d="M7 13H17" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                Guardar Cambios
+              </span>
+              <span v-else class="btn-content">
+                <div class="save-spinner"></div>
+                Guardando...
+              </span>
+            </button>
+          </div>
         </div>
       </section>
 
@@ -245,9 +277,9 @@ onUnmounted(() => clearTimeout(messageTimeout));
 .settings-page-content {
   padding: 1.5rem;
   width: 100%;
-  max-width: 1000px; /* Un poco más de espacio */
-  margin: 0 auto;
   box-sizing: border-box;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+  min-height: 100vh;
 }
 
 .config-main {
@@ -256,255 +288,428 @@ onUnmounted(() => clearTimeout(messageTimeout));
 
 /* Diseño de la Tarjeta de Perfil */
 .profile-card {
-  background: var(--color-bg-card);
-  border-radius: 16px; /* Bordes más redondeados */
-  border: 1px solid var(--color-border);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  overflow: hidden; /* Para que los bordes redondeados afecten a los hijos */
+  background: linear-gradient(135deg, #2a2a2a 0%, #323232 100%);
+  border-radius: 1.5rem;
+  border: 1px solid #404040;
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-}
-
-.card-header, .card-body, .card-footer {
-  padding: 2rem 2.5rem;
+  backdrop-filter: blur(10px);
 }
 
 .card-header {
-  border-bottom: 1px solid var(--color-border);
-}
-.card-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  margin: 0 0 0.25rem 0;
-}
-.card-subtitle {
-  font-size: 0.9rem;
-  color: var(--color-text-secondary);
-  margin: 0;
+  padding: 2rem 2.5rem 1.5rem 2.5rem;
+  border-bottom: 1px solid #404040;
+  background: linear-gradient(135deg, rgba(146, 208, 0, 0.05) 0%, transparent 100%);
 }
 
-.card-body {
+.card-title-container {
   display: flex;
-  gap: 3rem;
+  justify-content: flex-start;
+  align-items: flex-start;
 }
 
-.card-footer {
-  display: flex;
-  justify-content: flex-end;
-  background-color: rgba(0,0,0,0.1);
-  border-top: 1px solid var(--color-border);
-  padding-top: 1.5rem;
-  padding-bottom: 1.5rem;
-}
-
-/* Columna del Avatar */
-.avatar-column {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.5rem;
-  flex-shrink: 0;
-}
-.avatar-container {
-  width: 150px;
-  height: 150px;
-  position: relative;
-}
-.profile-photo, .profile-initials {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--color-bg-main);
-  border: 2px solid var(--color-border);
-  box-shadow: 0 0 0 4px var(--color-bg-card); /* Efecto de separación */
-  transition: all 0.3s ease;
-}
-.profile-initials {
-  background-image: linear-gradient(45deg, var(--color-primary), #6aa800);
-  color: #fff;
-  font-size: 3.5rem;
-  font-weight: 500;
-}
-.profile-initials.uploading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-bg-main);
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--color-border);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.avatar-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  width: 100%;
-}
-
-/* Columna del Formulario */
-.form-column {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-.form-item {
+.title-section {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
-.detail-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--color-text-secondary);
-}
-.profile-input, .profile-input-static {
-  width: 100%;
-  padding: 0.8rem 1rem;
-  background: var(--color-bg-main);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  color: var(--color-text-primary);
-  font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.profile-input::placeholder {
-  color: var(--color-text-placeholder);
-}
-.profile-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.2);
-}
-.profile-input:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background: #222;
-}
-.profile-input-static {
-  color: var(--color-text-secondary);
-  cursor: not-allowed;
+
+.card-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.025em;
 }
 
-/* Botones */
-.action-btn, .save-profile-btn {
+.title-underline {
+  width: 40px;
+  height: 3px;
+  background: linear-gradient(90deg, #92d000, #7bb500);
+  border-radius: 2px;
+}
+
+.card-body {
+  display: flex;
+  gap: 4rem;
+  padding: 2.5rem;
+}
+
+.avatar-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  flex-shrink: 0;
+}
+
+.avatar-container {
+  position: relative;
+  width: 140px;
+  height: 140px;
+}
+
+.avatar-ring {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  padding: 4px;
+  background: linear-gradient(45deg, white, white, white);
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease-in-out infinite;
+  position: relative;
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.profile-photo, .profile-initials {
+  width: calc(100% - 8px);
+  height: calc(100% - 8px);
+  border-radius: 50%;
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.profile-initials {
+  background: linear-gradient(135deg, #92d000, #7bb500);
+  color: #1a1a1a;
+  font-size: 2.75rem;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.profile-initials.uploading {
+  background: linear-gradient(135deg, #404040, #4a4a4a);
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 4px solid #606060;
+  border-top-color: #92d000;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.avatar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 200px;
+}
+
+.form-column {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.form-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.label-container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.detail-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #b3b3b3;
+  letter-spacing: 0.025em;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.profile-input {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #3a3a3a 0%, #404040 100%);
+  border: 2px solid #505050;
+  border-radius: 0.75rem;
+  color: #ffffff;
+  font-size: 1.05rem;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.profile-input::placeholder {
+  color: #909090;
+}
+
+.profile-input:focus {
+  outline: none;
+  border-color: #92d000;
+  box-shadow: 
+    0 0 0 4px rgba(146, 208, 0, 0.2),
+    inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+}
+
+.input-focus-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #92d000, #7bb500);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+  border-radius: 0 0 0.75rem 0.75rem;
+}
+
+.profile-input:focus + .input-focus-line {
+  transform: scaleX(1);
+}
+
+.profile-input-static {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #353535 0%, #3a3a3a 100%);
+  border: 2px solid #454545;
+  border-radius: 0.75rem;
+  color: #b3b3b3;
+  font-size: 1.05rem;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.email-text {
+  flex-grow: 1;
+}
+
+.locked-badge {
+  display: flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 0.375rem;
+  color: #909090;
+}
+
+.lock-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.action-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
-  font-size: 0.9rem;
+  gap: 0.625rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  padding: 0.6rem 1rem;
-  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.75rem;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative; /* Para el input de archivo */
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
+
 .action-btn input[type="file"] {
   position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
+  top: 0; 
+  left: 0; 
+  width: 100%; 
+  height: 100%;
   opacity: 0;
   cursor: pointer;
 }
+
 .action-btn .icon {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 .action-btn.primary-action {
-  background-color: var(--color-bg-main);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
+  background: linear-gradient(135deg, #404040 0%, #4a4a4a 100%);
+  color: #ffffff;
+  border: 2px solid #505050;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
+
 .action-btn.primary-action:hover:not(.disabled) {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+  border-color: #92d000;
+  background: linear-gradient(135deg, #4a4a4a 0%, #525252 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(146, 208, 0, 0.3);
 }
 
 .action-btn.danger-action {
-  background-color: transparent;
-  color: var(--color-danger);
-}
-.action-btn.danger-action:hover:not(:disabled) {
-  background-color: rgba(255, 69, 58, 0.1);
-}
-.action-btn.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, rgba(255, 107, 107, 0.05) 100%);
+  color: #ff6b6b;
+  border: 2px solid #ff6b6b;
 }
 
+.action-btn.danger-action:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.2) 0%, rgba(255, 107, 107, 0.1) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.3);
+}
+
+.card-footer {
+  background: linear-gradient(135deg, #353535 0%, #3a3a3a 100%);
+  border-top: 1px solid #454545;
+  padding: 2rem 2.5rem;
+}
+
+.save-section {
+  display: flex;
+  justify-content: flex-end;
+}
 
 .save-profile-btn {
-  background-color: var(--color-primary);
-  color: #000;
-  padding: 0.75rem 2rem;
-}
-.save-profile-btn:hover:not([disabled]) {
-  filter: brightness(1.1);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.2);
-}
-.save-profile-btn:disabled {
-  background-color: var(--color-border);
-  color: var(--color-text-placeholder);
-  cursor: not-allowed;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 1rem 2.5rem;
+  border-radius: 0.875rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #92d000 0%, #7bb500 100%);
+  color: #1a1a1a;
+  box-shadow: 
+    0 8px 24px rgba(146, 208, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  letter-spacing: 0.025em;
 }
 
+.btn-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.save-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.save-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #1a1a1a;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.save-profile-btn:hover:not([disabled]) {
+  background: linear-gradient(135deg, #7bb500 0%, #6aa000 100%);
+  transform: translateY(-3px);
+  box-shadow: 
+    0 12px 32px rgba(146, 208, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.save-profile-btn:disabled {
+  background: linear-gradient(135deg, #505050 0%, #555555 100%);
+  color: #909090;
+  cursor: not-allowed;
+  box-shadow: none;
+}
 
 /* Mensajes Toast (sin cambios en la lógica) */
 .toast-message {
   position: fixed;
-  bottom: 20px;
+  bottom: 2rem;
   left: 50%;
   transform: translateX(-50%);
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
+  padding: 1.25rem 2rem;
+  border-radius: 0.875rem;
   font-weight: 600;
   color: #fff;
   z-index: 1000;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-  min-width: 250px;
+  min-width: 300px;
   text-align: center;
-  animation: fadeInOut 4.5s forwards;
+  animation: toastSlideIn 0.5s ease-out;
+  backdrop-filter: blur(10px);
 }
-.toast-message.success { background-color: #34C759; }
-.toast-message.error { background-color: var(--color-danger); }
-@keyframes fadeInOut {
-  0%, 100% { opacity: 0; transform: translateX(-50%) translateY(20px); }
-  10%, 90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast-message.success { 
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.4);
 }
-
+.toast-message.error { 
+  background: linear-gradient(135deg, #ff6b6b 0%, #ef4444 100%);
+  box-shadow: 0 8px 24px rgba(255, 107, 107, 0.4);
+}
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+@keyframes spin { 
+  to { transform: rotate(360deg); } 
+}
 
 /* --- ZONA RESPONSIVA --- */
 @media (max-width: 768px) {
   .settings-page-content {
     padding: 1rem;
   }
+  
   .card-header, .card-body, .card-footer {
     padding: 1.5rem;
   }
+  
   .card-body {
     flex-direction: column;
     align-items: center;
-    gap: 2rem;
+    gap: 2.5rem;
   }
+  
   .form-column {
     width: 100%;
   }
+  
+  .avatar-container {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .profile-initials {
+    font-size: 2.25rem;
+  }
+  
+  .page-title {
+    font-size: 1.5rem;
+  }
+  
+  .card-title {
+    font-size: 1.25rem;
+  }
 }
-
 </style>

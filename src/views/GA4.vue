@@ -199,7 +199,31 @@ const formatNumber = (value: number) => (value === null || isNaN(value)) ? '0' :
 const formatDuration = (seconds: number) => { if (seconds === null || isNaN(seconds) || seconds < 0) return '00:00'; const m = Math.floor(seconds / 60); const s = Math.floor(seconds % 60); return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`; };
 const formatPercentage = (value: number) => (value === null || isNaN(value)) ? '0.00%' : `${(value * 100).toFixed(2)}%`.replace('NaN', '0.00');
 const getTrendClass = (metric: string) => { switch (metric) { case 'users': return usersTrend.value === 'up' ? 'text-green-500' : 'text-red-500'; case 'sessions': return sessionsTrend.value === 'up' ? 'text-green-500' : 'text-red-500'; case 'duration': return durationTrend.value === 'up' ? 'text-green-500' : 'text-red-500'; case 'bounce': return bounceTrend.value === 'up' ? 'text-red-500' : 'text-green-500'; case 'pages': return pagesTrend.value === 'up' ? 'text-green-500' : 'text-red-500'; default: return 'text-gray-500'; } };
-const getDateRange = (range: string) => { const endDate = new Date(); const startDate = new Date(); switch (range) { case '7d': startDate.setDate(endDate.getDate() - 6); break; case '14d': startDate.setDate(endDate.getDate() - 13); break; case '30d': startDate.setDate(endDate.getDate() - 29); break; } const formatDateToISO = (date: Date) => { const y = date.getFullYear(); const m = (date.getMonth() + 1).toString().padStart(2, '0'); const d = date.getDate().toString().padStart(2, '0'); return `${y}-${m}-${d}`; }; return { startDate: formatDateToISO(startDate), endDate: formatDateToISO(endDate) }; };
+const getDateRange = (range: string) => { 
+  const endDate = new Date(); 
+  const startDate = new Date(); 
+  switch (range) { 
+    case '7d': 
+      startDate.setDate(endDate.getDate() - 6); 
+      break; 
+    case '14d': 
+      startDate.setDate(endDate.getDate() - 13); 
+      break; 
+    case '30d': 
+      startDate.setDate(endDate.getDate() - 29); 
+      break; 
+  } 
+  const formatDateToISO = (date: Date) => { 
+    const y = date.getFullYear(); 
+    const m = (date.getMonth() + 1).toString().padStart(2, '0'); 
+    const d = date.getDate().toString().padStart(2, '0'); 
+    return `${y}-${m}-${d}`; 
+  }; 
+  return { 
+    startDate: formatDateToISO(startDate), 
+    endDate: formatDateToISO(endDate) 
+  }; 
+};
 const timeAgo = computed(() => { if (!lastUpdated.value) return ''; const now = new Date(); const seconds = Math.floor((now.getTime() - lastUpdated.value.getTime()) / 1000); let interval = seconds / 31536000; if (interval > 1) return `hace ${Math.floor(interval)} años`; interval = seconds / 2592000; if (interval > 1) return `hace ${Math.floor(interval)} meses`; interval = seconds / 86400; if (interval > 1) return `hace ${Math.floor(interval)} días`; interval = seconds / 3600; if (interval > 1) return `hace ${Math.floor(interval)} horas`; interval = seconds / 60; if (interval > 1) return `hace ${Math.floor(interval)} minutos`; return 'diariamente'; });
 const kpiData = computed(() => { if (gaDailyMetrics.value.length === 0) { return { activeUsers: 0, sessions: 0, avgSessionDuration: 0, bounceRate: 0, pagesPerSession: 0, pageViews: 0 }; } const totalUsers = gaDailyMetrics.value.reduce((sum, row) => sum + (row.users || 0), 0); const totalSessions = gaDailyMetrics.value.reduce((sum, row) => sum + (row.sessions || 0), 0); const totalPageViews = gaDailyMetrics.value.reduce((sum, row) => sum + (row.page_views || 0), 0); const totalAvgSessionDuration = gaDailyMetrics.value.reduce((sum, row) => sum + (row.avg_session_duration || 0), 0); const avgSessionDuration = gaDailyMetrics.value.length > 0 ? totalAvgSessionDuration / gaDailyMetrics.value.length : 0; const totalBounceRate = gaDailyMetrics.value.reduce((sum, row) => sum + (row.bounce_rate || 0), 0); const avgBounceRate = gaDailyMetrics.value.length > 0 ? totalBounceRate / gaDailyMetrics.value.length : 0; return { activeUsers: totalUsers, sessions: totalSessions, avgSessionDuration: avgSessionDuration, bounceRate: avgBounceRate, pagesPerSession: totalSessions > 0 ? totalPageViews / totalSessions : 0 }; });
 const totalConversions = computed(() => { return gaConversions.value.reduce((sum, item) => sum + Number(item.total_conversions || 0), 0); });

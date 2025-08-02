@@ -31,11 +31,6 @@
             <div class="balance-info">
               <div class="card-header">
                 <h3 class="card-label">Saldo Disponible</h3>
-                <div class="help-container"
-                     @mouseenter="showPopover($event)"
-                     @mouseleave="hidePopover">
-                  <HelpCircle class="h-4 w-4" />
-                </div>
               </div>
               <div class="balance-value">${{ formatCurrency(clientBalance) }}</div>
               <p class="card-description">Fondos actuales en tu cuenta.</p>
@@ -45,11 +40,6 @@
           <div class="content-card calendar-card">
             <div class="card-header">
               <h3 class="card-label">Calendario</h3>
-              <div class="help-container"
-                   @mouseenter="showPopover($event)"
-                   @mouseleave="hidePopover">
-                <HelpCircle class="h-4 w-4" />
-              </div>
             </div>
             <div class="mini-calendar">
               <div class="calendar-header">
@@ -85,11 +75,6 @@
             <div class="insight-info">
               <div class="card-header">
                 <h3 class="card-label">Análisis Rápido</h3>
-                <div class="help-container"
-                     @mouseenter="showPopover($event)"
-                     @mouseleave="hidePopover">
-                  <HelpCircle class="h-4 w-4" />
-                </div>
               </div>
               <p class="insight-text">
                 ¡Buen trabajo! Tu palabra clave
@@ -103,11 +88,6 @@
           <div class="content-card seo-card">
             <div class="card-header">
               <h3 class="card-title">Palabras Clave Principales</h3>
-              <div class="help-container"
-                   @mouseenter="showPopover($event)"
-                   @mouseleave="hidePopover">
-                <HelpCircle class="h-5 w-5" />
-              </div>
             </div>
             <div v-if="seoKeywords.length === 0" class="no-data-message">
               Aún no hay datos de SEO para mostrar.
@@ -146,29 +126,19 @@
         </div>
       </main>
     </div>
-
-    <Transition name="popover-fade">
-      <div v-if="showHelpPopover" class="help-popover" :style="{ top: popoverY + 'px', left: popoverX + 'px' }">
-        <p class="popover-text">{{ getTooltipText() }}</p>
-      </div>
-    </Transition>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, onUnmounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { supabase } from '@/lib/supabaseClient';
-import { ArrowUpIcon, ArrowDownIcon, HelpCircle, Wallet, TrendingUp, CalendarDays } from 'lucide-vue-next';
+import { ArrowUpIcon, ArrowDownIcon, Wallet, TrendingUp, CalendarDays } from 'lucide-vue-next';
 
 // --- Estado de datos ---
 const isLoading = ref(true);
 const clientName = ref('');
 const clientBalance = ref(null);
 const seoKeywords = ref([]);
-const showHelpPopover = ref(false);
-const popoverX = ref(0);
-const popoverY = ref(0);
-let hidePopoverTimeout = null;
 
 // --- Propiedades Computadas ---
 const keywordToWatch = computed(() => {
@@ -335,39 +305,10 @@ const fetchSeoData = async (clienteId) => {
 };
 
 // --- Funciones de UI ---
-const showPopover = (event) => {
-  clearTimeout(hidePopoverTimeout);
-  const rect = event.target.getBoundingClientRect();
-  popoverX.value = rect.left + rect.width / 2;
-  popoverY.value = rect.top - 10;
-  showHelpPopover.value = true;
-  currentHelpContext.value = event.target.closest('.balance-card') ? 'balance' : 
-                            event.target.closest('.insight-card') ? 'insight' :
-                            event.target.closest('.seo-card') ? 'seo' : 'default';
-};
-
-const currentHelpContext = ref('default');
-
-const getTooltipText = () => {
-  switch (currentHelpContext.value) {
-    case 'balance':
-      return 'Muestra el saldo actual disponible en tu cuenta para inversiones en campañas.';
-    case 'insight':
-      return 'Destaca tu palabra clave con mejor rendimiento reciente en posicionamiento.';
-    case 'seo':
-      return 'Muestra la posición de tus palabras clave en Google y su cambio reciente.';
-    default:
-      return 'Vista rápida del mes actual con el día de hoy resaltado.';
-  }
-};
-
-const hidePopover = () => {
-  hidePopoverTimeout = setTimeout(() => { showHelpPopover.value = false; }, 200);
-};
+// Removed all tooltip-related functions
 
 // --- Hooks de Ciclo de Vida ---
 onMounted(fetchDashboardData);
-onUnmounted(() => clearTimeout(hidePopoverTimeout));
 </script>
 
 <style scoped>
@@ -613,18 +554,6 @@ onUnmounted(() => clearTimeout(hidePopoverTimeout));
   color: #aaa;
   margin: 0;
   font-weight: 500;
-}
-
-.help-container {
-  cursor: help;
-  color: #aaa;
-  transition: color 0.2s ease;
-  opacity: 0.7;
-}
-
-.help-container:hover { 
-  color: var(--color-primary);
-  opacity: 1;
 }
 
 /* --- TARJETAS PEQUEÑAS (SALDO Y ANÁLISIS) --- */
@@ -903,136 +832,5 @@ onUnmounted(() => clearTimeout(hidePopoverTimeout));
   display: flex;
   align-items: center; 
   justify-content: center;
-}
-
-/* --- RESPONSIVE DESIGN --- */
-@media (max-width: 992px) {
-  .content-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .left-column {
-    order: 1;
-  }
-  
-  .right-column {
-    order: 2;
-  }
-}
-
-@media (max-width: 767px) {
-  .page-content-wrapper { 
-    padding: 1rem; 
-  }
-  
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2rem;
-    padding: 1.5rem 0;
-  }
-
-  .header-right {
-    align-self: stretch;
-  }
-
-  .date-display {
-    padding: 1rem 1.2rem;
-    justify-content: center;
-  }
-  
-  .welcome-title { 
-    font-size: 2rem; 
-  }
-
-  .welcome-title::after {
-    right: -1.5rem;
-    top: -0.3rem;
-    font-size: 1.2rem;
-  }
-  
-  .welcome-subtitle { 
-    font-size: 1.1rem; 
-  }
-  
-  .content-grid { 
-    grid-template-columns: 1fr; 
-  }
-
-  .left-column, .right-column {
-    gap: 1rem;
-  }
-  
-  .balance-card, .insight-card { 
-    flex-direction: column; 
-    align-items: flex-start; 
-    gap: 1rem;
-  }
-
-  .card-icon-bg {
-    margin-top: 0;
-  }
-
-  .balance-value {
-    font-size: 1.8rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .content-card {
-    padding: 1rem;
-  }
-  
-  .balance-value {
-    font-size: 1.6rem;
-  }
-  
-  .card-title {
-    font-size: 1.1rem;
-  }
-
-  .welcome-title {
-    font-size: 1.8rem;
-  }
-
-  .welcome-title::after {
-    right: -1rem;
-    font-size: 1rem;
-  }
-
-  .date-display {
-    padding: 0.8rem 1rem;
-  }
-
-  .date-main {
-    font-size: 1rem;
-  }
-
-  .date-sub {
-    font-size: 0.85rem;
-  }
-
-  .date-icon {
-    width: 22px;
-    height: 22px;
-  }
-
-  .calendar-grid {
-    gap: 0.3rem;
-  }
-
-  .calendar-date {
-    font-size: 0.75rem;
-    min-height: 24px;
-  }
-
-  .weekday {
-    font-size: 0.7rem;
-    padding: 0.25rem;
-  }
-
-  .mini-calendar {
-    gap: 0.75rem;
-  }
 }
 </style>

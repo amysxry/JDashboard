@@ -34,7 +34,7 @@
           <li>
             <RouterLink to="/dashboard" @click="closeMobileMenu" class="nav-link" :class="{ active: currentRoute === '/dashboard' }">
               <LayoutDashboard class="icon" />
-              <span v-show="!isCollapsed || isMobileView">Dashboard</span>
+              <span v-show="!isCollapsed || isMobileView">Inicio</span>
             </RouterLink>
           </li>
           <li>
@@ -52,7 +52,7 @@
           <li>
             <RouterLink to="/wordpress" @click="closeMobileMenu" class="nav-link" :class="{ active: currentRoute === '/wordpress' }">
               <Globe class="icon" />
-              <span v-show="!isCollapsed || isMobileView">WordPress</span>
+              <span v-show="!isCollapsed || isMobileView">Tienda en línea</span>
             </RouterLink>
           </li>
           <li>

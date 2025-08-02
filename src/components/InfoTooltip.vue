@@ -1,122 +1,139 @@
 <template>
-  <div class="tooltip-wrapper" @mouseenter="show" @mouseleave="hide" @click="toggle">
-    <slot>
-      <HelpCircle class="default-icon" />
-    </slot>
-    <Transition name="tooltip-fade">
-      <div v-if="isVisible" class="tooltip-box" :style="tooltipStyle">
-        <div class="tooltip-content">
-          {{ text }}
-        </div>
-      </div>
-    </Transition>
+  <div class="info-tooltip-container">
+    <div 
+      class="info-tooltip-trigger"
+      @mouseenter="showTooltip = true"
+      @mouseleave="showTooltip = false"
+      @focus="showTooltip = true"
+      @blur="showTooltip = false"
+      tabindex="0"
+    >
+      <HelpCircle class="info-icon" />
+    </div>
+    <div 
+      v-if="showTooltip" 
+      class="info-tooltip-content"
+      :class="{ 'show': showTooltip }"
+    >
+      {{ text }}
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue';
+import { ref } from 'vue';
 import { HelpCircle } from 'lucide-vue-next';
 
-const props = defineProps({
+defineProps({
   text: {
     type: String,
-    required: true,
-  },
+    required: true
+  }
 });
 
-const isVisible = ref(false);
-const tooltipStyle = ref({});
-
-const calculatePosition = (event) => {
-  const triggerElement = event.currentTarget;
-  const tooltipElement = triggerElement.querySelector('.tooltip-box');
-  
-  if (!tooltipElement) return;
-
-  const rect = triggerElement.getBoundingClientRect();
-  const tooltipRect = tooltipElement.getBoundingClientRect();
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-
-  let top = rect.top - tooltipRect.height - 10; // Posición por defecto: arriba
-  let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
-
-  // Ajustar si se sale por arriba
-  if (top < 0) {
-    top = rect.bottom + 10;
-  }
-  // Ajustar si se sale por la izquierda
-  if (left < 0) {
-    left = 5;
-  }
-  // Ajustar si se sale por la derecha
-  if (left + tooltipRect.width > viewportWidth) {
-    left = viewportWidth - tooltipRect.width - 5;
-  }
-
-  tooltipStyle.value = {
-    top: `${top}px`,
-    left: `${left}px`,
-  };
-};
-
-const show = async (event) => {
-  isVisible.value = true;
-  await nextTick(); // Esperar a que el DOM se actualice
-  calculatePosition(event);
-};
-
-const hide = () => {
-  isVisible.value = false;
-};
-
-const toggle = (event) => {
-  if (isVisible.value) {
-    hide();
-  } else {
-    show(event);
-  }
-};
+const showTooltip = ref(false);
 </script>
 
 <style scoped>
-.tooltip-wrapper {
+.info-tooltip-container {
   position: relative;
   display: inline-flex;
   align-items: center;
+}
+
+.info-tooltip-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: help;
+  border-radius: 50%;
+  padding: 2px;
+  transition: all 0.2s ease;
+  outline: none;
 }
 
-.default-icon {
-  width: 1rem;
-  height: 1rem;
-  color: var(--color-text-secondary);
+.info-tooltip-trigger:hover,
+.info-tooltip-trigger:focus {
+  background-color: rgba(146, 208, 0, 0.1);
 }
 
-.tooltip-box {
-  position: fixed; /* Usamos fixed para posicionarnos respecto al viewport */
-  z-index: 100;
-  width: 240px;
-  background-color: #333;
-  color: #fff;
-  text-align: left;
-  border-radius: 8px;
+.info-icon {
+  width: 16px;
+  height: 16px;
+  color: #92d000;
+  transition: color 0.2s ease;
+}
+
+.info-tooltip-trigger:hover .info-icon,
+.info-tooltip-trigger:focus .info-icon {
+  color: #7bb500;
+}
+
+.info-tooltip-content {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  background: linear-gradient(135deg, #2a2a2a 0%, #323232 100%);
+  color: #ffffff;
   padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
   font-size: 0.875rem;
-  font-weight: 400;
-  line-height: 1.5;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  pointer-events: none; /* Evita que el tooltip interfiera con el mouse */
-}
-
-.tooltip-fade-enter-active,
-.tooltip-fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.tooltip-fade-enter-from,
-.tooltip-fade-leave-to {
+  font-weight: 500;
+  white-space: nowrap;
+  max-width: 200px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.4;
+  box-shadow: 
+    0 8px 16px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(146, 208, 0, 0.2);
+  z-index: 1000;
   opacity: 0;
-  transform: translateY(5px);
+  animation: tooltipFadeIn 0.2s ease-out forwards;
+  backdrop-filter: blur(10px);
+}
+
+.info-tooltip-content::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #2a2a2a;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.info-tooltip-content.show {
+  opacity: 1;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-8px);
+  }
+}
+
+@media (max-width: 768px) {
+  .info-tooltip-content {
+    position: fixed;
+    bottom: auto;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 280px;
+    padding: 1rem 1.25rem;
+    font-size: 0.9rem;
+  }
+  
+  .info-tooltip-content::after {
+    display: none;
+  }
 }
 </style>

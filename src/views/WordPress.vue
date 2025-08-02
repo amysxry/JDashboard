@@ -1,29 +1,35 @@
 <template>
-  <div class="page-wrapper">
-    <header class="page-header">
-      <div class="header-content">
-        <h1 class="page-title">WooCommerce</h1>
-        <p class="page-subtitle">{{ dateDisplayString }}</p>
+  <div class="ga4-page-content">
+    <header class="page-controls-header">
+      <div class="header-info">
+        <div class="date-info-main">
+          <CalendarDays class="date-icon" />
+          <p class="date-range-display">{{ dateDisplayString }}</p>
+        </div>
+        <div class="last-updated-info">
+          <Clock class="update-icon" />
+          <span>Datos actualizados diariamente</span>
+        </div>
       </div>
+      
+      <div class="header-divider"></div>
+
       <div class="header-actions">
         <select v-model="timeRange" @change="fetchData" class="time-select" :disabled="isLoading">
-          <option value="month">Último mes</option>
+          <option value="month">Últimos 30 días</option>
           <option value="14d">Últimos 14 días</option>
           <option value="7d">Últimos 7 días</option>
         </select>
         <button @click="fetchData" class="refresh-btn" :disabled="isLoading" title="Actualizar datos">
-          <RefreshCw class="icon" :class="{ 'rotating': isLoading }" />
+          <RefreshCw class="h-4 w-4" :class="{ 'rotating': isLoading }" />
+          <span>Actualizar</span>
         </button>
       </div>
     </header>
 
-    <main class="main-content">
-      <section v-if="isLoading" class="kpi-grid">
-        <div v-for="i in 3" :key="i" class="kpi-card-skeleton">
-          <div class="skeleton-line title"></div>
-          <div class="skeleton-line value"></div>
-          <div class="skeleton-line trend"></div>
-        </div>
+    <main class="analytics-main">
+      <section v-if="isLoading" class="kpis-section">
+        <div v-for="i in 3" :key="i" class="kpi-card loading"></div>
       </section>
 
       <section v-else-if="fetchError" class="error-container">
@@ -36,7 +42,7 @@
       </section>
 
       <template v-else>
-        <section class="kpi-grid">
+        <section class="kpis-section">
           <div class="kpi-card">
             <div class="kpi-header">
               <p class="kpi-title">Ingresos Totales</p>
@@ -44,8 +50,8 @@
             </div>
             <h3 class="kpi-value">{{ formatCurrency(kpiSummary.totalSales) }}</h3>
             <div class="kpi-trend" :class="getTrendClass(salesChange)">
-              <component :is="salesChange >= 0 ? ArrowUpIcon : ArrowDownIcon" class="trend-icon" />
-              <span>{{ salesChange.toFixed(2) }}% vs período anterior</span>
+              <component :is="salesChange >= 0 ? ArrowUpIcon : ArrowDownIcon" class="h-4 w-4" />
+              <span>{{ salesChange.toFixed(2) }}%</span>
             </div>
           </div>
           <div class="kpi-card">
@@ -55,8 +61,8 @@
             </div>
             <h3 class="kpi-value">{{ kpiSummary.totalOrders }}</h3>
              <div class="kpi-trend" :class="getTrendClass(ordersChange)">
-              <component :is="ordersChange >= 0 ? ArrowUpIcon : ArrowDownIcon" class="trend-icon" />
-              <span>{{ ordersChange.toFixed(2) }}% vs período anterior</span>
+              <component :is="ordersChange >= 0 ? ArrowUpIcon : ArrowDownIcon" class="h-4 w-4" />
+              <span>{{ ordersChange.toFixed(2) }}%</span>
             </div>
           </div>
           <div class="kpi-card">
@@ -69,9 +75,9 @@
           </div>
         </section>
 
-        <section class="chart-section">
+        <section class="charts-section">
           <div class="chart-card">
-            <div class="kpi-header">
+            <div class="chart-header">
               <h3 class="chart-title">Ingresos por Día</h3>
               <InfoTooltip text="Evolución diaria de los ingresos totales generados por los pedidos completados." />
             </div>
@@ -88,7 +94,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
 import { supabase } from '@/lib/supabaseClient';
-import { RefreshCw, AlertTriangle, ArrowUpIcon, ArrowDownIcon } from 'lucide-vue-next';
+import { RefreshCw, AlertTriangle, ArrowUpIcon, ArrowDownIcon, CalendarDays, Clock } from 'lucide-vue-next';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { Line } from 'vue-chartjs';
 import InfoTooltip from '@/components/InfoTooltip.vue';
@@ -113,31 +119,43 @@ const dateRanges = computed(() => {
   switch(timeRange.value) {
     case '14d':
       days = 14;
-      startDate.setDate(endDate.getDate() - 14);
+      startDate.setDate(endDate.getDate() - 13);
       break;
     case '7d':
       days = 7;
-      startDate.setDate(endDate.getDate() - 7);
+      startDate.setDate(endDate.getDate() - 6);
       break;
     case 'month':
     default:
       days = 30;
-      startDate.setMonth(endDate.getMonth() - 1);
+      startDate.setDate(endDate.getDate() - 29);
       break;
   }
 
   const previousEndDate = new Date(startDate);
   previousEndDate.setDate(previousEndDate.getDate() - 1);
   const previousStartDate = new Date(previousEndDate);
-  previousStartDate.setDate(previousStartDate.getDate() - days);
+  previousStartDate.setDate(previousStartDate.getDate() - (days - 1));
 
   return { startDate, endDate, previousStartDate, previousEndDate };
 });
 
 const dateDisplayString = computed(() => {
   const { startDate, endDate } = dateRanges.value;
-  const formatDate = (date: Date) => new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(date);
-  return `${formatDate(startDate)} - ${formatDate(endDate)}, ${endDate.getFullYear()}`;
+  const formatDisplayDate = (dateString: string) => {
+    const date = new Date(dateString + 'T00:00:00');
+    return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+  };
+  const formatDateToISO = (date: Date) => date.toISOString().split('T')[0];
+  const startDateISO = formatDateToISO(startDate);
+  const endDateISO = formatDateToISO(endDate);
+  const startYear = new Date(startDateISO + 'T00:00:00').getFullYear();
+  const endYear = new Date(endDateISO + 'T00:00:00').getFullYear();
+  
+  if (startYear !== endYear) {
+    return `${formatDisplayDate(startDateISO)}, ${startYear} - ${formatDisplayDate(endDateISO)}, ${endYear}`;
+  }
+  return `${formatDisplayDate(startDateISO)} - ${formatDisplayDate(endDateISO)} de ${endYear}`;
 });
 
 const kpiSummary = computed(() => {
@@ -180,10 +198,19 @@ const salesChartData = computed(() => {
         datasets: [{
             label: 'Ingresos Totales',
             data,
-            borderColor: 'var(--color-accent-green)',
-            backgroundColor: 'rgba(0, 220, 130, 0.1)',
-            tension: 0.3,
+            borderColor: '#92d000',
+            backgroundColor: 'rgba(146, 208, 0, 0.1)',
+            tension: 0.4,
             fill: true,
+            pointBackgroundColor: '#92d000',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverBackgroundColor: '#ffffff',
+            pointHoverBorderColor: '#92d000',
+            pointHoverBorderWidth: 3,
+            pointHoverRadius: 6,
+            borderWidth: 3,
         }]
     };
 });
@@ -191,10 +218,67 @@ const salesChartData = computed(() => {
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  plugins: { legend: { display: false } },
+  interaction: {
+    intersect: false,
+    mode: 'index'
+  },
+  plugins: { 
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      titleColor: '#ffffff',
+      bodyColor: '#ffffff',
+      borderColor: '#92d000',
+      borderWidth: 1,
+      cornerRadius: 8,
+      padding: 12,
+      displayColors: false,
+      callbacks: {
+        title: function(context) {
+          return `${context[0].label}`;
+        },
+        label: function(context) {
+          const value = context.parsed.y;
+          return `Ingresos: $${value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+        }
+      }
+    }
+  },
   scales: {
-    y: { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#A0A5B1' } },
-    x: { grid: { display: false }, ticks: { color: '#A0A5B1' } }
+    y: { 
+      grid: { 
+        color: 'rgba(255, 255, 255, 0.08)',
+        borderColor: 'rgba(255, 255, 255, 0.1)'
+      }, 
+      ticks: { 
+        color: '#aaa',
+        font: { size: 12 },
+        callback: function(value) {
+          return '$' + value.toLocaleString();
+        }
+      },
+      border: {
+        display: false
+      }
+    },
+    x: { 
+      grid: { 
+        display: false 
+      }, 
+      ticks: { 
+        color: '#aaa',
+        font: { size: 12 }
+      },
+      border: {
+        display: false
+      }
+    }
+  },
+  elements: {
+    line: {
+      borderJoinStyle: 'round',
+      borderCapStyle: 'round'
+    }
   }
 };
 
@@ -253,170 +337,378 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Tus estilos de antes, más los nuevos para las mejoras */
-:root {
-  --color-bg: #1F2228;
-  --color-bg-card: #2A2F37;
-  --color-border: #3A404A;
-  --color-text-primary: #F5F5F5;
-  --color-text-secondary: #A0A5B1;
-  --color-accent-green: #00DC82;
-  --color-error: #FF453A;
-  --color-trend-up: #00DC82;
-  --color-trend-down: #FF453A;
-}
-.page-wrapper {
-  background-color: var(--color-bg);
-  padding: 1.5rem 2rem;
-  font-family: 'Inter', sans-serif;
+.ga4-page-content {
+  padding: 1.5rem;
   width: 100%;
   box-sizing: border-box;
 }
-.page-header {
+
+.page-controls-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 1.5rem;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
+  background-color: #2a2a2a;
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid #3b3b3b;
 }
+
+.header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.date-info-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .page-title {
   font-size: 1.75rem;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: #ffffff;
   margin: 0;
 }
-.page-subtitle {
-  color: var(--color-text-secondary);
-  margin-top: 0.25rem;
-  font-size: 0.9rem;
+
+.date-range-display {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
 }
+
+.header-divider {
+  width: 1px;
+  align-self: stretch;
+  background-color: #444;
+}
+
 .header-actions {
   display: flex;
   gap: 1rem;
   align-items: center;
 }
+
 .time-select {
-  padding: 0.6rem 1rem;
-  border-radius: 8px;
-  background-color: var(--color-bg-card);
-  color: var(--color-text-secondary);
-  border: 1px solid var(--color-border);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  background-color: #3b3b3b;
+  color: #ffffff;
+  border: 1px solid #92d000;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3e%3cpath d='M7 7l3 3 3-3m0 6l-3-3-3 3' stroke='%23ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 0.8em 0.8em;
+  padding-right: 2.5rem;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: border-color 0.2s;
 }
-.time-select:hover { border-color: #555; }
+
 .refresh-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background-color: var(--color-bg-card);
-  color: var(--color-text-secondary);
-  border: 1px solid var(--color-border);
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  background-color: #92d000;
+  color: #1e1e1e;
+  border: none;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
-.refresh-btn:hover:not(:disabled) {
-  color: var(--color-text-primary);
-  border-color: #555;
-}
-.refresh-btn .icon.rotating { animation: spin 1s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
 
-/* KPIs y Gráficas */
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2.5rem; /* Espacio antes de la gráfica */
+.refresh-btn:hover:not(:disabled) {
+  background-color: #7bb500;
 }
+
+.refresh-btn svg {
+  color: #1e1e1e;
+}
+
+.h-4 {
+  width: 1rem;
+  height: 1rem;
+}
+
+.w-4 {
+  width: 1rem;
+  height: 1rem;
+}
+
+.rotating {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.analytics-main {
+  width: 100%;
+}
+
+.kpis-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
 .kpi-card {
-  background-color: var(--color-bg-card);
+  background-color: #2a2a2a;
+  border-radius: 1rem;
   padding: 1.5rem;
-  border-radius: 12px;
-  border: 1px solid var(--color-border);
+  border: 1px solid #3b3b3b;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
 }
+
 .kpi-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 0.5rem;
 }
+
 .kpi-title {
-  color: var(--color-text-secondary);
   font-size: 0.9rem;
+  color: #aaa;
   margin: 0;
 }
+
 .kpi-value {
-  font-size: 2.5rem;
-  font-weight: 600;
-  color: var(--color-accent-green);
-  letter-spacing: -1.5px;
-  margin: 0;
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0.5rem 0;
   line-height: 1;
 }
+
 .kpi-trend {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-size: 0.8rem;
-    font-weight: 500;
-    margin-top: auto; /* Empuja hacia abajo */
-    padding-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-top: auto;
+  padding-top: 0.5rem;
 }
-.kpi-trend.trend-up { color: var(--color-trend-up); }
-.kpi-trend.trend-down { color: var(--color-trend-down); }
-.kpi-trend .trend-icon { width: 14px; height: 14px; }
-.kpi-trend-placeholder { min-height: 22px; /* Mantiene el espacio alineado */}
 
-/* Nueva sección de gráfica */
-.chart-section {
-  margin-top: 2rem;
+.kpi-trend.text-green-500 {
+  color: #92d000;
 }
+
+.kpi-trend.text-red-500 {
+  color: #FF453A;
+}
+
+.kpi-trend svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.kpi-trend-placeholder {
+  min-height: 22px;
+}
+
+.charts-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
 .chart-card {
-  background-color: var(--color-bg-card);
+  background: linear-gradient(135deg, #2a2a2a 0%, #2d2d2d 100%);
+  border-radius: 1rem;
   padding: 1.5rem;
-  border-radius: 12px;
-  border: 1px solid var(--color-border);
-}
-.chart-title {
-    color: var(--color-text-primary);
-    font-size: 1.25rem;
-    font-weight: 600;
-}
-.chart-container {
-  height: 300px;
+  border: 1px solid #3b3b3b;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   position: relative;
-  margin-top: 1.5rem;
+  overflow: hidden;
 }
 
-/* Skeleton Loader */
-.kpi-card-skeleton { background-color: var(--color-bg-card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--color-border); display: flex; flex-direction: column; gap: 1.25rem; }
-.skeleton-line { background: linear-gradient(90deg, var(--color-border) 25%, #3A404A 50%, var(--color-border) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; }
-.skeleton-line.title { width: 50%; height: 16px; }
-.skeleton-line.value { width: 80%; height: 40px; }
-.skeleton-line.trend { width: 60%; height: 14px; margin-top: 0.5rem; }
-@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.chart-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, #92d000 50%, transparent 100%);
+  opacity: 0.6;
+}
 
-/* Contenedor de Error */
-.error-container { display: flex; justify-content: center; padding: 4rem 2rem; }
-.error-box { background-color: var(--color-bg-card); border: 1px solid var(--color-error); border-radius: 12px; padding: 2.5rem; text-align: center; max-width: 450px; }
-.error-icon { width: 40px; height: 40px; color: var(--color-error); margin-bottom: 1rem; }
-.error-title { font-size: 1.25rem; font-weight: 600; margin: 0 0 0.5rem 0; color: var(--color-text-primary); }
-.error-message { color: var(--color-text-secondary); margin-bottom: 1.5rem; }
-.retry-btn { background-color: var(--color-accent-green); color: #000; padding: 0.75rem 1.5rem; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-.retry-btn:hover { filter: brightness(1.1); }
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  position: relative;
+  z-index: 1;
+}
 
-@media (max-width: 768px) {
-  .page-wrapper { padding: 1rem; }
-  .page-header { flex-direction: column; align-items: flex-start; }
-  .header-actions { width: 100%; justify-content: flex-end; }
+.chart-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.chart-container {
+  position: relative;
+  height: 300px;
+  width: 100%;
+  background: linear-gradient(135deg, rgba(146, 208, 0, 0.02) 0%, rgba(146, 208, 0, 0.05) 100%);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-top: 0.5rem;
+}
+
+.kpi-card.loading {
+  background-color: #3b3b3b;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  animation: pulse 1.5s infinite alternate;
+  min-height: 150px;
+}
+
+@keyframes pulse {
+  from { opacity: 0.7; }
+  to { opacity: 1; }
+}
+
+.error-container {
+  display: flex;
+  justify-content: center;
+  padding: 4rem 2rem;
+}
+
+.error-box {
+  background-color: #2a2a2a;
+  border: 1px solid #FF453A;
+  border-radius: 1rem;
+  padding: 2.5rem;
+  text-align: center;
+  max-width: 450px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.error-icon {
+  width: 40px;
+  height: 40px;
+  color: #FF453A;
+  margin-bottom: 1rem;
+}
+
+.error-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: #ffffff;
+}
+
+.error-message {
+  color: #aaa;
+  margin-bottom: 1.5rem;
+}
+
+.retry-btn {
+  background-color: #92d000;
+  color: #1e1e1e;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.retry-btn:hover {
+  background-color: #7bb500;
+}
+
+.date-icon {
+    width: 20px;
+    height: 20px;
+    color: #92d000;
+}
+
+.last-updated-info { 
+  display: flex; 
+  align-items: center; 
+  gap: 0.5rem; 
+  font-size: 0.8rem; 
+  color: #aaa; 
+  padding-left: 2px; 
+}
+
+.update-icon { 
+  width: 14px; 
+  height: 14px; 
+}
+
+@media (max-width: 820px) {
+  .header-divider {
+    display: none;
+  }
+  .page-controls-header {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 1023px) {
+  .ga4-page-content {
+    padding: 1rem;
+  }
+  .kpi-value {
+    font-size: 1.8rem;
+  }
+  .chart-card {
+    padding: 1rem;
+  }
+  .chart-title {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .kpis-section {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .kpi-card {
+    padding: 1rem;
+  }
+  .kpi-value {
+    font-size: 1.6rem;
+  }
+  .page-controls-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .header-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .time-select, .refresh-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .kpis-section {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
