@@ -50,28 +50,30 @@
                 </div>
                 <div v-if="getVisibleTasksForProject(project.gid).length > 0" class="tasks-container">
                   <h4 class="tasks-title">Tareas</h4>
-                  <Transition name="slide-fade">
-                    <ul v-if="expandedProjects.has(project.gid)" class="task-list">
-                      <li v-for="task in getVisibleTasksForProject(project.gid)" :key="task.gid" :class="{ 'task-completed': task.completed }">
-                        <div class="task-content">
-                          <div class="task-header">
-                            <Check v-if="task.completed" class="task-icon completed"/>
-                            <Circle v-else class="task-icon pending"/>
-                            <span class="task-name">{{ task.name }}</span>
+                  <Transition name="slide-fade" appear>
+                    <div v-if="expandedProjects.has(project.gid)" class="task-list-wrapper">
+                      <ul class="task-list">
+                        <li v-for="task in getVisibleTasksForProject(project.gid)" :key="task.gid" :class="{ 'task-completed': task.completed }">
+                          <div class="task-content">
+                            <div class="task-header">
+                              <Check v-if="task.completed" class="task-icon completed"/>
+                              <Circle v-else class="task-icon pending"/>
+                              <span class="task-name">{{ task.name }}</span>
+                            </div>
+                            <p v-if="task.notes" class="task-description">{{ task.notes }}</p>
                           </div>
-                          <p v-if="task.notes" class="task-description">{{ task.notes }}</p>
-                        </div>
-                        <div class="task-meta">
-                          <span v-if="getUserArea(task.assignee_gid)" class="area-badge">
-                            {{ getUserArea(task.assignee_gid) }}
-                          </span>
-                          <span v-if="task.due_on" class="task-due-date">
-                            <Calendar class="date-icon"/>
-                            {{ formatDate(task.due_on) }}
-                          </span>
-                        </div>
-                      </li>
-                    </ul>
+                          <div class="task-meta">
+                            <span v-if="getUserArea(task.assignee_gid)" class="area-badge">
+                              {{ getUserArea(task.assignee_gid) }}
+                            </span>
+                            <span v-if="task.due_on" class="task-due-date">
+                              <Calendar class="date-icon"/>
+                              {{ formatDate(task.due_on) }}
+                            </span>
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
                   </Transition>
                 </div>
                 <div v-else class="no-tasks">
@@ -257,17 +259,35 @@ onMounted(() => {
 .spinner { width: 48px; height: 48px; border: 5px solid var(--color-border); border-bottom-color: var(--color-primary); border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
 @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-.project-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 1.5rem; }
+.project-grid { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fill, minmax(450px, 1fr)); 
+  gap: 1.5rem; 
+  align-items: start; 
+}
+
+@media (max-width: 480px) {
+  .project-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
 
 .project-card {
-  background-color: #2a2a2a; /* Fondo unificado */
-  border: 1px solid #3b3b3b; /* Borde unificado */
+  background-color: #2a2a2a;
+  border: 1px solid #3b3b3b;
   border-radius: 1rem;
   display: flex;
   flex-direction: column;
-  transition: all 0.2s ease-in-out;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  min-height: fit-content;
+  overflow: hidden;
+  position: relative;
 }
-.project-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.2); }
+.project-card:hover { 
+  transform: translateY(-5px); 
+  box-shadow: 0 8px 25px rgba(0,0,0,0.2); 
+}
 
 .card-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem; }
 .project-name { font-size: 1.1rem; font-weight: 600; color: var(--color-text-primary); text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
@@ -281,9 +301,29 @@ onMounted(() => {
 .progress-bar-bg { width: 100%; background-color: #3b3b3b; border-radius: 5px; height: 8px; overflow: hidden; }
 .progress-bar-fill { height: 100%; background-color: var(--color-primary); border-radius: 5px; transition: width 0.5s ease; }
 
-.tasks-container { margin-top: 1.5rem; }
-.tasks-title { font-weight: 500; color: var(--color-text-secondary); margin-bottom: 1rem; }
-.task-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+.tasks-container { 
+  margin-top: 1.5rem; 
+  overflow: hidden;
+}
+.tasks-title { 
+  font-weight: 500; 
+  color: var(--color-text-secondary); 
+  margin-bottom: 1rem; 
+  font-size: 0.9rem;
+}
+.task-list-wrapper {
+  overflow: hidden;
+}
+
+.task-list { 
+  list-style: none; 
+  padding: 0; 
+  margin: 0;
+  display: flex; 
+  flex-direction: column; 
+  gap: 0.75rem; 
+  overflow: hidden;
+}
 
 .task-list li { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: 0.75rem 0; border-top: 1px solid #3b3b3b; }
 .task-list li:first-child { border-top: none; }
@@ -306,23 +346,83 @@ onMounted(() => {
 .toggle-tasks-btn:hover { color: var(--color-primary); }
 .toggle-icon { transition: transform 0.3s ease; }
 .toggle-icon.is-expanded { transform: rotate(180deg); }
-.slide-fade-enter-active, .slide-fade-leave-active { transition: all 0.4s ease-out; }
-.slide-fade-enter-from, .slide-fade-leave-to { transform: translateY(-10px); opacity: 0; max-height: 0; }
-.slide-fade-enter-to, .slide-fade-leave-from { transform: translateY(0); opacity: 1; max-height: 500px; }
+.slide-fade-enter-active, .slide-fade-leave-active { 
+  transition: all 0.3s ease-out; 
+  overflow: hidden;
+}
+.slide-fade-enter-from { 
+  transform: translateY(-10px); 
+  opacity: 0; 
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.slide-fade-leave-to {
+  transform: translateY(-10px); 
+  opacity: 0; 
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.slide-fade-enter-to, .slide-fade-leave-from { 
+  transform: translateY(0); 
+  opacity: 1; 
+  max-height: 1000px;
+}
 
-/* Estilos responsivos copiados de GA4.vue */
+/* Estilos responsivos mejorados */
+@media (max-width: 1200px) {
+  .project-grid {
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .project-grid {
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.25rem;
+  }
+}
+
 @media (max-width: 1023px) {
     .ga4-page-content {
         padding: 1rem;
     }
-    .project-grid {
-        grid-template-columns: 1fr;
-    }
 }
+
 @media (max-width: 767px) {
     .page-controls-header {
         flex-direction: column;
         align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .project-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .project-card {
+        margin-bottom: 0;
+    }
+    
+    .card-header {
+        padding: 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .card-body {
+        padding: 0 1rem;
+    }
+    
+    .card-footer {
+        padding: 0.5rem 1rem;
     }
 }
 </style>
