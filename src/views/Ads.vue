@@ -149,39 +149,45 @@ const timeRange = ref('30d');
 const fetchError = ref<string | null>(null);
 const performanceReport = ref<any[]>([]);
 
-const dateDisplayString = computed(() => {
-  const endDate = new Date();
-  const startDate = new Date();
-  let days = 30;
-  switch (timeRange.value) {
-    case '14d': 
-      days = 14; 
-      startDate.setDate(endDate.getDate() - 13);
-      break;
+const getDateRange = (range: string) => { 
+  const endDate = new Date(); 
+  const startDate = new Date(); 
+  switch (range) { 
     case '7d': 
-      days = 7; 
-      startDate.setDate(endDate.getDate() - 6);
-      break;
-    default: // 30d
-      days = 30;
-      startDate.setDate(endDate.getDate() - 29);
-      break;
-  }
-  
+      startDate.setDate(endDate.getDate() - 6); 
+      break; 
+    case '14d': 
+      startDate.setDate(endDate.getDate() - 13); 
+      break; 
+    case '30d': 
+      startDate.setDate(endDate.getDate() - 29); 
+      break; 
+  } 
+  const formatDateToISO = (date: Date) => { 
+    const y = date.getFullYear(); 
+    const m = (date.getMonth() + 1).toString().padStart(2, '0'); 
+    const d = date.getDate().toString().padStart(2, '0'); 
+    return `${y}-${m}-${d}`; 
+  }; 
+  return { 
+    startDate: formatDateToISO(startDate), 
+    endDate: formatDateToISO(endDate) 
+  }; 
+};
+
+const dateDisplayString = computed(() => {
+  const { startDate, endDate } = getDateRange(timeRange.value);
   const formatDisplayDate = (dateString: string) => {
     const date = new Date(dateString + 'T00:00:00');
     return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
   };
-  const formatDateToISO = (date: Date) => date.toISOString().split('T')[0];
-  const startDateISO = formatDateToISO(startDate);
-  const endDateISO = formatDateToISO(endDate);
-  const startYear = new Date(startDateISO + 'T00:00:00').getFullYear();
-  const endYear = new Date(endDateISO + 'T00:00:00').getFullYear();
+  const startYear = new Date(startDate + 'T00:00:00').getFullYear();
+  const endYear = new Date(endDate + 'T00:00:00').getFullYear();
   
   if (startYear !== endYear) {
-    return `${formatDisplayDate(startDateISO)}, ${startYear} - ${formatDisplayDate(endDateISO)}, ${endYear}`;
+    return `${formatDisplayDate(startDate)}, ${startYear} - ${formatDisplayDate(endDate)}, ${endYear}`;
   }
-  return `${formatDisplayDate(startDateISO)} - ${formatDisplayDate(endDateISO)} de ${endYear}`;
+  return `${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)} de ${endYear}`;
 });
 
 const kpiSummary = computed(() => {
@@ -393,31 +399,14 @@ async function fetchData() {
     const { data: clientData } = await supabase.from('clientes').select('id').eq('auth_id', user.id).single();
     if (!clientData) throw new Error("Cliente no encontrado");
 
-    const endDate = new Date();
-    const startDate = new Date();
-    let days = 30;
-    switch (timeRange.value) {
-      case '14d': 
-        days = 14; 
-        startDate.setDate(endDate.getDate() - 13);
-        break;
-      case '7d': 
-        days = 7; 
-        startDate.setDate(endDate.getDate() - 6);
-        break;
-      default: // 30d
-        days = 30;
-        startDate.setDate(endDate.getDate() - 29);
-        break;
-    }
-    const formatDateToISO = (date: Date) => date.toISOString().split('T')[0];
+    const { startDate, endDate } = getDateRange(timeRange.value);
 
     const { data, error } = await supabase
       .from('ads_performance_cache')
       .select('*')
       .eq('cliente_id', clientData.id)
-      .gte('date', formatDateToISO(startDate))
-      .lte('date', formatDateToISO(endDate));
+      .gte('date', startDate)
+      .lte('date', endDate);
 
     if (error) throw error;
     performanceReport.value = data || [];

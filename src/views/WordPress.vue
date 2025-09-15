@@ -111,24 +111,49 @@ const previousSalesReport = ref<any[]>([]);
 const salesChange = ref(0);
 const ordersChange = ref(0);
 
-const dateRanges = computed(() => {
-  const endDate = new Date();
-  const startDate = new Date();
-  let days = 30;
+const getDateRange = (range: string) => { 
+  const endDate = new Date(); 
+  const startDate = new Date(); 
+  switch (range) { 
+    case '7d': 
+      startDate.setDate(endDate.getDate() - 6); 
+      break; 
+    case '14d': 
+      startDate.setDate(endDate.getDate() - 13); 
+      break; 
+    case 'month':
+    case '30d': 
+      startDate.setDate(endDate.getDate() - 29); 
+      break; 
+  } 
+  const formatDateToISO = (date: Date) => { 
+    const y = date.getFullYear(); 
+    const m = (date.getMonth() + 1).toString().padStart(2, '0'); 
+    const d = date.getDate().toString().padStart(2, '0'); 
+    return `${y}-${m}-${d}`; 
+  }; 
+  return { 
+    startDate: formatDateToISO(startDate), 
+    endDate: formatDateToISO(endDate) 
+  }; 
+};
 
+const dateRanges = computed(() => {
+  const { startDate: startDateISO, endDate: endDateISO } = getDateRange(timeRange.value);
+  const startDate = new Date(startDateISO + 'T00:00:00');
+  const endDate = new Date(endDateISO + 'T00:00:00');
+  
+  let days = 30;
   switch(timeRange.value) {
     case '14d':
       days = 14;
-      startDate.setDate(endDate.getDate() - 13);
       break;
     case '7d':
       days = 7;
-      startDate.setDate(endDate.getDate() - 6);
       break;
     case 'month':
     default:
       days = 30;
-      startDate.setDate(endDate.getDate() - 29);
       break;
   }
 
@@ -141,21 +166,18 @@ const dateRanges = computed(() => {
 });
 
 const dateDisplayString = computed(() => {
-  const { startDate, endDate } = dateRanges.value;
+  const { startDate, endDate } = getDateRange(timeRange.value);
   const formatDisplayDate = (dateString: string) => {
     const date = new Date(dateString + 'T00:00:00');
     return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
   };
-  const formatDateToISO = (date: Date) => date.toISOString().split('T')[0];
-  const startDateISO = formatDateToISO(startDate);
-  const endDateISO = formatDateToISO(endDate);
-  const startYear = new Date(startDateISO + 'T00:00:00').getFullYear();
-  const endYear = new Date(endDateISO + 'T00:00:00').getFullYear();
+  const startYear = new Date(startDate + 'T00:00:00').getFullYear();
+  const endYear = new Date(endDate + 'T00:00:00').getFullYear();
   
   if (startYear !== endYear) {
-    return `${formatDisplayDate(startDateISO)}, ${startYear} - ${formatDisplayDate(endDateISO)}, ${endYear}`;
+    return `${formatDisplayDate(startDate)}, ${startYear} - ${formatDisplayDate(endDate)}, ${endYear}`;
   }
-  return `${formatDisplayDate(startDateISO)} - ${formatDisplayDate(endDateISO)} de ${endYear}`;
+  return `${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)} de ${endYear}`;
 });
 
 const kpiSummary = computed(() => {
@@ -293,16 +315,38 @@ const fetchData = async () => {
     const { data: clientData } = await supabase.from('clientes').select('id').eq('auth_id', user.id).single();
     if (!clientData) throw new Error("No se pudo vincular el usuario a un cliente.");
 
-    const { startDate, endDate, previousStartDate, previousEndDate } = dateRanges.value;
-    const formatDateToISO = (date: Date) => date.toISOString().split('T')[0];
+    const { startDate, endDate } = getDateRange(timeRange.value);
+    const { startDate: prevStartDate, endDate: prevEndDate } = getDateRange(timeRange.value);
+    
+    // Calcular periodo anterior
+    const startDateObj = new Date(startDate + 'T00:00:00');
+    const previousEndDate = new Date(startDateObj);
+    previousEndDate.setDate(previousEndDate.getDate() - 1);
+    
+    let days = 30;
+    switch(timeRange.value) {
+      case '14d': days = 14; break;
+      case '7d': days = 7; break;
+      case 'month': default: days = 30; break;
+    }
+    
+    const previousStartDate = new Date(previousEndDate);
+    previousStartDate.setDate(previousStartDate.getDate() - (days - 1));
+    
+    const formatDateToISO = (date: Date) => {
+      const y = date.getFullYear();
+      const m = (date.getMonth() + 1).toString().padStart(2, '0');
+      const d = date.getDate().toString().padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    };
 
     const [currentPeriodResult, previousPeriodResult] = await Promise.all([
       supabase
         .from('wc_sales_cache')
         .select('*')
         .eq('cliente_id', clientData.id)
-        .gte('date', formatDateToISO(startDate))
-        .lte('date', formatDateToISO(endDate)),
+        .gte('date', startDate)
+        .lte('date', endDate),
       supabase
         .from('wc_sales_cache')
         .select('*')
