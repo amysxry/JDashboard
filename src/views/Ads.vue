@@ -39,35 +39,35 @@
           <div class="kpi-card">
             <div class="kpi-header">
               <p class="kpi-title">Inversión Total</p>
-              <InfoTooltip text="Costo total de tus campañas en el período seleccionado." />
+              <InfoTooltip text="Costo total de tus campañas" />
             </div>
             <h3 class="kpi-value">{{ formatCurrency(kpiSummary.totalCost) }}</h3>
           </div>
           <div class="kpi-card">
             <div class="kpi-header">
               <p class="kpi-title">Campañas Activas</p>
-              <InfoTooltip text="Número de campañas que tuvieron actividad en el período seleccionado." />
+              <InfoTooltip text="Campañas activas" />
             </div>
             <h3 class="kpi-value">{{ formatNumber(kpiSummary.activeCampaigns) }}</h3>
           </div>
           <div class="kpi-card">
             <div class="kpi-header">
               <p class="kpi-title">Impresiones</p>
-              <InfoTooltip text="Número de veces que tus anuncios fueron mostrados." />
+              <InfoTooltip text="Cantidad de anuncios mostrados" />
             </div>
             <h3 class="kpi-value">{{ formatNumber(kpiSummary.totalImpressions) }}</h3>
           </div>
           <div class="kpi-card">
             <div class="kpi-header">
               <p class="kpi-title">Clics</p>
-              <InfoTooltip text="Número total de clics en tus anuncios." />
+              <InfoTooltip text="Número total de clics en anuncios" />
             </div>
             <h3 class="kpi-value">{{ formatNumber(kpiSummary.totalClicks) }}</h3>
           </div>
           <div class="kpi-card">
             <div class="kpi-header">
               <p class="kpi-title">CPC Promedio</p>
-              <InfoTooltip text="Costo promedio que has pagado por cada clic (Costo / Clics)." />
+              <InfoTooltip text="Costo promedio pagado por cada clic" />
             </div>
             <h3 class="kpi-value">{{ formatCurrency(kpiSummary.avgCpc) }}</h3>
           </div>
@@ -77,14 +77,14 @@
       <section class="charts-section">
         <div class="chart-card">
           <div class="chart-header">
-            <h3 class="chart-title">Rendimiento a lo largo del tiempo</h3>
+            <h3 class="chart-title">Conversiones y Clics por Día</h3>
           </div>
           <template v-if="isLoading || fetchError">
             <div class="chart-placeholder">{{ fetchError ? 'Error al cargar la gráfica.' : 'Cargando gráfica...' }}</div>
           </template>
           <template v-else>
             <div class="chart-container">
-              <Line :data="performanceChartData" :options="chartOptions" />
+              <Line :data="conversionsClicksChartData" :options="conversionsClicksChartOptions" />
             </div>
           </template>
         </div>
@@ -109,20 +109,16 @@
                   <tr>
                     <th>Campaña</th>
                     <th>Impresiones</th>
-                    <th>Clics</th>
                     <th>CPC</th>
-                    <th>Costo</th>
-                    <th>Conversiones</th>
+                    <th>Costo Total</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="campaign in campaignsData" :key="campaign.id" class="campaign-row">
                     <td class="campaign-name">{{ campaign.name }}</td>
                     <td class="campaign-metric">{{ formatNumber(campaign.impressions) }}</td>
-                    <td class="campaign-metric">{{ formatNumber(campaign.clicks) }}</td>
                     <td class="campaign-metric">{{ formatCurrency(campaign.clicks > 0 ? campaign.cost / campaign.clicks : 0) }}</td>
                     <td class="campaign-metric campaign-cost">{{ formatCurrency(campaign.cost) }}</td>
-                    <td class="campaign-metric">{{ formatNumber(campaign.conversions, 2) }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -200,17 +196,23 @@ const kpiSummary = computed(() => {
   const totalConversions = performanceReport.value.reduce((sum, row) => sum + (row.conversions || 0), 0);
   const avgCpc = totalClicks > 0 ? totalCost / totalClicks : 0;
   
-  // Count unique campaigns that had activity (impressions, clicks, or cost)
-  const activeCampaigns = new Set(
-    performanceReport.value
-      .filter(row => (row.impressions > 0 || row.clicks > 0 || row.cost_micros > 0))
-      .map(row => row.campaign_id || row.campaign_name || `campaign_${row.date}`)
-  ).size;
+  // Usar la misma lógica que campaignsData para coherencia
+  const campaignMap = new Map();
+  performanceReport.value.forEach(row => {
+    const campaignName = row.campaign_name || `Campaña ${row.campaign_id || 'Sin ID'}`;
+    const campaignKey = campaignName.toLowerCase().trim();
+    
+    if ((row.impressions > 0 || row.clicks > 0 || row.cost_micros > 0) && !campaignMap.has(campaignKey)) {
+      campaignMap.set(campaignKey, true);
+    }
+  });
+  
+  const activeCampaigns = campaignMap.size;
   
   return { totalCost, activeCampaigns, totalImpressions, totalClicks, avgCpc, totalConversions };
 });
 
-const performanceChartData = computed(() => {
+const conversionsClicksChartData = computed(() => {
   const sortedReport = [...performanceReport.value].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   const labels = sortedReport.map(d => new Date(d.date + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }));
   
@@ -219,7 +221,7 @@ const performanceChartData = computed(() => {
     datasets: [
       {
         label: 'Clics',
-        data: sortedReport.map(d => d.clicks),
+        data: sortedReport.map(d => d.clicks || 0),
         borderColor: '#92d000',
         backgroundColor: 'rgba(146, 208, 0, 0.1)',
         borderWidth: 3,
@@ -229,27 +231,27 @@ const performanceChartData = computed(() => {
         pointBackgroundColor: '#92d000',
         pointBorderColor: '#ffffff',
         pointBorderWidth: 2,
-        pointRadius: 5,
-        pointHoverRadius: 7,
+        pointRadius: 4,
+        pointHoverRadius: 6,
         pointHoverBackgroundColor: '#92d000',
         pointHoverBorderColor: '#ffffff',
         pointHoverBorderWidth: 3,
       },
       {
-        label: 'Impresiones',
-        data: sortedReport.map(d => d.impressions),
-        borderColor: '#60a5fa',
-        backgroundColor: 'rgba(96, 165, 250, 0.1)',
+        label: 'Conversiones',
+        data: sortedReport.map(d => d.conversions || 0),
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
         borderWidth: 3,
         fill: true,
         yAxisID: 'y1',
         tension: 0.4,
-        pointBackgroundColor: '#60a5fa',
+        pointBackgroundColor: '#f59e0b',
         pointBorderColor: '#ffffff',
         pointBorderWidth: 2,
-        pointRadius: 5,
-        pointHoverRadius: 7,
-        pointHoverBackgroundColor: '#60a5fa',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: '#f59e0b',
         pointHoverBorderColor: '#ffffff',
         pointHoverBorderWidth: 3,
       }
@@ -257,23 +259,23 @@ const performanceChartData = computed(() => {
   };
 });
 
-const chartOptions = {
+const conversionsClicksChartOptions: any = {
   responsive: true,
   maintainAspectRatio: false,
   interaction: { 
-    mode: 'index', 
+    mode: 'index' as const, 
     intersect: false 
   },
   plugins: {
     legend: {
       display: true,
-      position: 'top',
-      align: 'end',
+      position: 'top' as const,
+      align: 'end' as const,
       labels: {
         color: '#ffffff',
         font: {
           size: 13,
-          weight: '500'
+          weight: 'normal' as const
         },
         usePointStyle: true,
         pointStyle: 'circle',
@@ -283,26 +285,38 @@ const chartOptions = {
       }
     },
     tooltip: {
-      backgroundColor: 'rgba(26, 26, 26, 0.95)',
+      enabled: true,
+      mode: 'index',
+      intersect: false,
+      backgroundColor: 'rgba(26, 26, 26, 0.98)',
       titleColor: '#ffffff',
       bodyColor: '#ffffff',
-      borderColor: '#3b3b3b',
-      borderWidth: 1,
+      borderColor: '#92d000',
+      borderWidth: 2,
       cornerRadius: 8,
       displayColors: true,
-      padding: 12,
+      padding: 16,
       titleFont: {
         size: 14,
-        weight: '600'
+        weight: 'bold' as const
       },
       bodyFont: {
         size: 13
       },
+      caretSize: 8,
+      caretPadding: 10,
+      titleMarginBottom: 10,
+      bodySpacing: 6,
+      xPadding: 16,
+      yPadding: 16,
       callbacks: {
-        label: function(context) {
+        title: function(context: any) {
+          return context[0].label || '';
+        },
+        label: function(context: any) {
           const label = context.dataset.label || '';
-          const value = context.parsed.y;
-          const formattedValue = value.toLocaleString('es-MX');
+          const value = context.parsed.y || 0;
+          const formattedValue = Math.round(value).toLocaleString('es-MX');
           return `${label}: ${formattedValue}`;
         }
       }
@@ -310,9 +324,9 @@ const chartOptions = {
   },
   scales: {
     y: { 
-      type: 'linear', 
+      type: 'linear' as const, 
       display: true, 
-      position: 'left',
+      position: 'left' as const,
       title: {
         display: true,
         text: 'Clics',
@@ -332,7 +346,7 @@ const chartOptions = {
           size: 11
         },
         padding: 8,
-        callback: function(value) {
+        callback: function(value: any) {
           return value.toLocaleString('es-MX');
         }
       },
@@ -341,16 +355,16 @@ const chartOptions = {
       }
     },
     y1: { 
-      type: 'linear', 
+      type: 'linear' as const, 
       display: true, 
-      position: 'right',
+      position: 'right' as const,
       title: {
         display: true,
-        text: 'Impresiones',
-        color: '#60a5fa',
+        text: 'Conversiones',
+        color: '#f59e0b',
         font: {
           size: 12,
-          weight: '600'
+          weight: 'bold' as const
         }
       },
       grid: { 
@@ -363,7 +377,7 @@ const chartOptions = {
           size: 11
         },
         padding: 8,
-        callback: function(value) {
+        callback: function(value: any) {
           return value.toLocaleString('es-MX');
         }
       },
@@ -423,12 +437,13 @@ const campaignsData = computed(() => {
   const campaignMap = new Map();
   
   performanceReport.value.forEach(row => {
-    const campaignId = row.campaign_id || row.campaign_name || `campaign_${row.date}`;
-    const campaignName = row.campaign_name || `Campaña ${campaignId}`;
+    // Mejorar el manejo de nombres de campaña
+    const campaignName = row.campaign_name?.trim() || `Campaña ${row.campaign_id || 'Sin ID'}`;
+    const campaignKey = campaignName.toLowerCase().trim();
     
-    if (!campaignMap.has(campaignId)) {
-      campaignMap.set(campaignId, {
-        id: campaignId,
+    if (!campaignMap.has(campaignKey)) {
+      campaignMap.set(campaignKey, {
+        id: row.campaign_id || campaignKey,
         name: campaignName,
         impressions: 0,
         clicks: 0,
@@ -437,7 +452,7 @@ const campaignsData = computed(() => {
       });
     }
     
-    const campaign = campaignMap.get(campaignId);
+    const campaign = campaignMap.get(campaignKey);
     campaign.impressions += row.impressions || 0;
     campaign.clicks += row.clicks || 0;
     campaign.cost += (row.cost_micros || 0) / 1000000;
@@ -446,7 +461,8 @@ const campaignsData = computed(() => {
   
   return Array.from(campaignMap.values())
     .filter(campaign => campaign.impressions > 0 || campaign.clicks > 0 || campaign.cost > 0)
-    .sort((a, b) => b.cost - a.cost);
+    .sort((a, b) => b.cost - a.cost)
+    .slice(0, 15); // Aumentar a 15 para más campañas
 });
 
 function formatCurrency(value: number) {
@@ -645,8 +661,20 @@ watch(timeRange, fetchData);
 
 .charts-section {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
   gap: 1.5rem;
+}
+
+/* Asegurar que los tooltips de Chart.js sean visibles */
+:deep(.chartjs-tooltip) {
+  z-index: 9999 !important;
+  opacity: 1 !important;
+}
+
+/* Contenedor global para tooltips */
+:global(.chartjs-tooltip) {
+  z-index: 9999 !important;
+  opacity: 1 !important;
 }
 
 .chart-card {
@@ -698,6 +726,8 @@ watch(timeRange, fetchData);
   border-radius: 0.75rem;
   padding: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.05);
+  z-index: 10;
+  overflow: visible;
 }
 
 .chart-placeholder {
@@ -735,6 +765,147 @@ watch(timeRange, fetchData);
 @keyframes pulse {
   from { opacity: 0.7; }
   to { opacity: 1; }
+}
+
+/* CAMPAIGNS SECTION STYLES */
+.campaigns-section {
+  margin-top: 1rem;
+}
+
+.campaigns-card {
+  background: linear-gradient(135deg, #2a2a2a 0%, #252525 100%);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  border: 1px solid #3b3b3b;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.campaigns-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #92d000, #f59e0b);
+  border-radius: 1rem 1rem 0 0;
+}
+
+.campaigns-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.campaigns-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+  background: linear-gradient(135deg, #ffffff, #e0e0e0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.campaigns-count {
+  background: rgba(146, 208, 0, 0.15);
+  color: #92d000;
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid rgba(146, 208, 0, 0.3);
+}
+
+.campaigns-table-container {
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.campaigns-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: transparent;
+}
+
+.campaigns-table th {
+  background: linear-gradient(135deg, #3b3b3b, #333333);
+  color: #92d000;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 2px solid rgba(146, 208, 0, 0.3);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.campaigns-table th:first-child {
+  border-radius: 0.75rem 0 0 0;
+}
+
+.campaigns-table th:last-child {
+  border-radius: 0 0.75rem 0 0;
+}
+
+.campaign-row {
+  transition: all 0.2s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.campaign-row:hover {
+  background: rgba(146, 208, 0, 0.08);
+  transform: translateX(2px);
+}
+
+.campaign-row:last-child {
+  border-bottom: none;
+}
+
+.campaign-name {
+  font-weight: 500;
+  color: #ffffff;
+  padding: 1rem;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.campaign-metric {
+  color: #e0e0e0;
+  padding: 1rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+}
+
+.campaign-cost {
+  color: #92d000;
+  font-weight: 600;
+}
+
+.campaigns-placeholder {
+  text-align: center;
+  color: #aaa;
+  padding: 3rem 2rem;
+  background: linear-gradient(135deg, #3b3b3b, #333333);
+  border-radius: 0.75rem;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* RESPONSIVE DESIGN */

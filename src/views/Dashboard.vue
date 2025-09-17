@@ -24,16 +24,42 @@
 
       <main class="content-grid">
         <div class="left-column">
-          <div class="content-card balance-card">
-            <div class="card-icon-bg">
-              <Wallet class="h-6 w-6" />
+          <div class="content-card seo-card">
+            <div class="card-header">
+              <h3 class="card-title">Palabras Clave Principales</h3>
             </div>
-            <div class="balance-info">
-              <div class="card-header">
-                <h3 class="card-label">Saldo Disponible</h3>
-              </div>
-              <div class="balance-value">${{ formatCurrency(clientBalance) }}</div>
-              <p class="card-description">Fondos actuales en tu cuenta.</p>
+            <div v-if="seoKeywords.length === 0" class="no-data-message">
+              Aún no hay datos de SEO para mostrar.
+            </div>
+            <div v-else class="seo-table-container">
+              <table class="seo-table">
+                <thead>
+                  <tr>
+                    <th>Palabra Clave</th>
+                    <th>Posición</th>
+                    <th>Cambio (7d)</th>
+                    <th>Última Revisión</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="keyword in seoKeywords" :key="keyword.term">
+                    <td class="keyword-cell">{{ keyword.term }}</td>
+                    <td>
+                      <span class="position-badge" :class="getPositionBadgeClass(keyword.position)">
+                        #{{ keyword.position }}
+                      </span>
+                    </td>
+                    <td>
+                      <span v-if="keyword.change !== 0" class="change-indicator" :class="{'positive': keyword.change > 0, 'negative': keyword.change < 0}">
+                        <component :is="keyword.change > 0 ? ArrowUpIcon : ArrowDownIcon" class="h-3 w-3" />
+                        {{ Math.abs(keyword.change) }}
+                      </span>
+                      <span v-else class="change-indicator neutral">-</span>
+                    </td>
+                    <td>{{ keyword.lastUpdate }}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -78,45 +104,6 @@
               </p>
             </div>
           </div>
-          
-          <div class="content-card seo-card">
-            <div class="card-header">
-              <h3 class="card-title">Palabras Clave Principales</h3>
-            </div>
-            <div v-if="seoKeywords.length === 0" class="no-data-message">
-              Aún no hay datos de SEO para mostrar.
-            </div>
-            <div v-else class="seo-table-container">
-              <table class="seo-table">
-                <thead>
-                  <tr>
-                    <th>Palabra Clave</th>
-                    <th>Posición</th>
-                    <th>Cambio (7d)</th>
-                    <th>Última Revisión</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="keyword in seoKeywords" :key="keyword.term">
-                    <td class="keyword-cell">{{ keyword.term }}</td>
-                    <td>
-                      <span class="position-badge" :class="getPositionBadgeClass(keyword.position)">
-                        #{{ keyword.position }}
-                      </span>
-                    </td>
-                    <td>
-                      <span v-if="keyword.change !== 0" class="change-indicator" :class="{'positive': keyword.change > 0, 'negative': keyword.change < 0}">
-                        <component :is="keyword.change > 0 ? ArrowUpIcon : ArrowDownIcon" class="h-3 w-3" />
-                        {{ Math.abs(keyword.change) }}
-                      </span>
-                      <span v-else class="change-indicator neutral">-</span>
-                    </td>
-                    <td>{{ keyword.lastUpdate }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
       </main>
     </div>
@@ -126,12 +113,11 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { supabase } from '@/lib/supabaseClient';
-import { ArrowUpIcon, ArrowDownIcon, Wallet, TrendingUp, CalendarDays, Target, MousePointer, Globe, Zap } from 'lucide-vue-next';
+import { ArrowUpIcon, ArrowDownIcon, TrendingUp, CalendarDays, Target, MousePointer, Globe, Zap } from 'lucide-vue-next';
 
 // --- Estado de datos ---
 const isLoading = ref(true);
 const clientName = ref('');
-const clientBalance = ref(null);
 const seoKeywords = ref([]);
 const ga4Data = ref(null);
 const adsData = ref(null);
@@ -394,13 +380,12 @@ const fetchDashboardData = async () => {
 
     const { data: clientData, error } = await supabase
       .from('clientes')
-      .select('id, empresa, saldo')
+      .select('id, empresa')
       .eq('auth_id', user.id)
       .single();
     if (error) throw error;
 
     clientName.value = clientData.empresa;
-    clientBalance.value = clientData.saldo;
 
     // Cargar datos reales de las tablas
     await Promise.all([

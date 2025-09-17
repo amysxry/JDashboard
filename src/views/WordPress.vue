@@ -49,28 +49,30 @@
               <InfoTooltip text="Suma total de todas las ventas de pedidos completados en el período, incluyendo impuestos y envío." />
             </div>
             <h3 class="kpi-value">{{ formatCurrency(kpiSummary.totalSales) }}</h3>
-            <div class="kpi-trend" :class="getTrendClass(salesChange)">
-              <component :is="salesChange >= 0 ? ArrowUpIcon : ArrowDownIcon" class="h-4 w-4" />
-              <span>{{ salesChange.toFixed(2) }}%</span>
-            </div>
+            <div class="kpi-trend-placeholder"></div>
           </div>
           <div class="kpi-card">
             <div class="kpi-header">
-              <p class="kpi-title">Pedidos Realizados</p>
+              <p class="kpi-title">Pedidos Completados</p>
               <InfoTooltip text="Número total de pedidos únicos marcados como 'Completado' en el período seleccionado." />
             </div>
             <h3 class="kpi-value">{{ kpiSummary.totalOrders }}</h3>
-             <div class="kpi-trend" :class="getTrendClass(ordersChange)">
-              <component :is="ordersChange >= 0 ? ArrowUpIcon : ArrowDownIcon" class="h-4 w-4" />
-              <span>{{ ordersChange.toFixed(2) }}%</span>
-            </div>
+            <div class="kpi-trend-placeholder"></div>
           </div>
           <div class="kpi-card">
             <div class="kpi-header">
               <p class="kpi-title">Ticket Promedio</p>
-              <InfoTooltip text="Valor promedio de cada pedido (Ingresos Totales / Pedidos Realizados)." />
+              <InfoTooltip text="Valor promedio de cada pedido (Ingresos Totales / Pedidos Completados)." />
             </div>
             <h3 class="kpi-value">{{ formatCurrency(kpiSummary.averageTicket) }}</h3>
+            <div class="kpi-trend-placeholder"></div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <p class="kpi-title">Ingresos Netos</p>
+              <InfoTooltip text="Ingresos totales menos impuestos y costos de envío, cuando estén disponibles." />
+            </div>
+            <h3 class="kpi-value">{{ formatCurrency(kpiSummary.netSales) }}</h3>
             <div class="kpi-trend-placeholder"></div>
           </div>
         </section>
@@ -85,6 +87,15 @@
                 <Line :data="salesChartData" :options="chartOptions" />
             </div>
           </div>
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Pedidos por Día</h3>
+              <InfoTooltip text="Número de pedidos completados por día en el período seleccionado." />
+            </div>
+            <div class="chart-container">
+                <Line :data="ordersChartData" :options="ordersChartOptions" />
+            </div>
+          </div>
         </section>
       </template>
     </main>
@@ -94,7 +105,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
 import { supabase } from '@/lib/supabaseClient';
-import { RefreshCw, AlertTriangle, ArrowUpIcon, ArrowDownIcon, CalendarDays, Clock } from 'lucide-vue-next';
+import { RefreshCw, AlertTriangle, CalendarDays, Clock } from 'lucide-vue-next';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { Line } from 'vue-chartjs';
 import InfoTooltip from '@/components/InfoTooltip.vue';
@@ -107,9 +118,6 @@ const fetchError = ref<string | null>(null);
 
 const salesReport = ref<any[]>([]);
 const previousSalesReport = ref<any[]>([]);
-
-const salesChange = ref(0);
-const ordersChange = ref(0);
 
 const getDateRange = (range: string) => { 
   const endDate = new Date(); 
@@ -124,6 +132,7 @@ const getDateRange = (range: string) => {
     case 'month':
     case '30d': 
       startDate.setDate(endDate.getDate() - 29); 
+      break; 
       break; 
   } 
   const formatDateToISO = (date: Date) => { 
@@ -182,32 +191,123 @@ const dateDisplayString = computed(() => {
 
 const kpiSummary = computed(() => {
   if (!salesReport.value || salesReport.value.length === 0) {
-    return { totalSales: 0, totalOrders: 0, averageTicket: 0 };
+    return { 
+      totalSales: 0, 
+      totalOrders: 0, 
+      averageTicket: 0, 
+      netSales: 0
+    };
   }
   const totalSales = salesReport.value.reduce((sum, row) => sum + parseFloat(row.total_sales || 0), 0);
+  const netSales = salesReport.value.reduce((sum, row) => sum + parseFloat(row.net_sales || 0), 0);
   const totalOrders = salesReport.value.reduce((sum, row) => sum + (row.total_orders || 0), 0);
   const averageTicket = totalOrders > 0 ? totalSales / totalOrders : 0;
-  return { totalSales, totalOrders, averageTicket };
+  
+  return { totalSales, totalOrders, averageTicket, netSales };
 });
 
 watch([kpiSummary, previousSalesReport], () => {
   const currentSales = kpiSummary.value.totalSales;
   const currentOrders = kpiSummary.value.totalOrders;
+  const currentNetSales = kpiSummary.value.netSales;
 
   const previousSales = previousSalesReport.value.reduce((sum, row) => sum + parseFloat(row.total_sales || 0), 0);
   const previousOrders = previousSalesReport.value.reduce((sum, row) => sum + (row.total_orders || 0), 0);
-
-  const calculateChange = (current: number, previous: number) => {
-    if (previous === 0) return current > 0 ? 100 : 0;
-    return ((current - previous) / previous) * 100;
-  };
-  
-  salesChange.value = calculateChange(currentSales, previousSales);
-  ordersChange.value = calculateChange(currentOrders, previousOrders);
+  const previousNetSales = previousSalesReport.value.reduce((sum, row) => sum + parseFloat(row.net_sales || 0), 0);
 });
 
-const getTrendClass = (value: number) => {
-    return value >= 0 ? 'trend-up' : 'trend-down';
+const ordersChartData = computed(() => {
+    const sortedReport = [...salesReport.value].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const labels = sortedReport.map(d => new Date(d.date + 'T00:00:00').toLocaleDateString('es-ES', {day: 'numeric', month: 'short'}));
+    const data = sortedReport.map(d => d.total_orders || 0);
+
+    return {
+        labels,
+        datasets: [{
+            label: 'Pedidos Completados',
+            data,
+            borderColor: '#60a5fa',
+            backgroundColor: 'rgba(96, 165, 250, 0.1)',
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: '#60a5fa',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverBackgroundColor: '#ffffff',
+            pointHoverBorderColor: '#60a5fa',
+            pointHoverBorderWidth: 3,
+            pointHoverRadius: 6,
+            borderWidth: 3,
+        }]
+    };
+});
+
+const ordersChartOptions: any = {
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: {
+    intersect: false,
+    mode: 'index' as const
+  },
+  plugins: { 
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      titleColor: '#ffffff',
+      bodyColor: '#ffffff',
+      borderColor: '#60a5fa',
+      borderWidth: 1,
+      cornerRadius: 8,
+      padding: 12,
+      displayColors: false,
+      callbacks: {
+        title: function(context: any) {
+          return `${context[0].label}`;
+        },
+        label: function(context: any) {
+          const value = context.parsed.y;
+          return `Pedidos: ${value}`;
+        }
+      }
+    }
+  },
+  scales: {
+    y: { 
+      grid: { 
+        color: 'rgba(255, 255, 255, 0.08)',
+        borderColor: 'rgba(255, 255, 255, 0.1)'
+      }, 
+      ticks: { 
+        color: '#aaa',
+        font: { size: 12 },
+        callback: function(value: any) {
+          return value.toLocaleString();
+        }
+      },
+      border: {
+        display: false
+      }
+    },
+    x: { 
+      grid: { 
+        display: false 
+      }, 
+      ticks: { 
+        color: '#aaa',
+        font: { size: 12 }
+      },
+      border: {
+        display: false
+      }
+    }
+  },
+  elements: {
+    line: {
+      borderJoinStyle: 'round' as const,
+      borderCapStyle: 'round' as const
+    }
+  }
 };
 
 const salesChartData = computed(() => {
@@ -237,12 +337,12 @@ const salesChartData = computed(() => {
     };
 });
 
-const chartOptions = {
+const chartOptions: any = {
   responsive: true,
   maintainAspectRatio: false,
   interaction: {
     intersect: false,
-    mode: 'index'
+    mode: 'index' as const
   },
   plugins: { 
     legend: { display: false },
@@ -256,10 +356,10 @@ const chartOptions = {
       padding: 12,
       displayColors: false,
       callbacks: {
-        title: function(context) {
+        title: function(context: any) {
           return `${context[0].label}`;
         },
-        label: function(context) {
+        label: function(context: any) {
           const value = context.parsed.y;
           return `Ingresos: $${value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
         }
@@ -275,7 +375,7 @@ const chartOptions = {
       ticks: { 
         color: '#aaa',
         font: { size: 12 },
-        callback: function(value) {
+        callback: function(value: any) {
           return '$' + value.toLocaleString();
         }
       },
@@ -298,8 +398,8 @@ const chartOptions = {
   },
   elements: {
     line: {
-      borderJoinStyle: 'round',
-      borderCapStyle: 'round'
+      borderJoinStyle: 'round' as const,
+      borderCapStyle: 'round' as const
     }
   }
 };
@@ -316,7 +416,6 @@ const fetchData = async () => {
     if (!clientData) throw new Error("No se pudo vincular el usuario a un cliente.");
 
     const { startDate, endDate } = getDateRange(timeRange.value);
-    const { startDate: prevStartDate, endDate: prevEndDate } = getDateRange(timeRange.value);
     
     // Calcular periodo anterior
     const startDateObj = new Date(startDate + 'T00:00:00');
@@ -373,6 +472,11 @@ const fetchData = async () => {
 function formatCurrency(value: number) {
   if (isNaN(value)) return '$0.00';
   return `$${value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+}
+
+function formatNumber(value: number) {
+  if (isNaN(value)) return '0';
+  return value.toLocaleString('es-MX');
 }
 
 onMounted(() => {
@@ -724,11 +828,17 @@ onMounted(() => {
   .chart-title {
     font-size: 1.1rem;
   }
+  .products-card {
+    padding: 1rem;
+  }
+  .products-title {
+    font-size: 1.2rem;
+  }
 }
 
 @media (max-width: 767px) {
   .kpis-section {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
   }
   .kpi-card {
@@ -748,11 +858,40 @@ onMounted(() => {
   .time-select, .refresh-btn {
     width: 100%;
   }
+  .products-table-container {
+    font-size: 0.85rem;
+  }
+  .product-name {
+    padding: 0.75rem;
+  }
+  .product-metric {
+    padding: 0.75rem;
+  }
+  .product-title {
+    max-width: 200px;
+  }
 }
 
 @media (max-width: 480px) {
   .kpis-section {
     grid-template-columns: 1fr;
+  }
+  .products-table th,
+  .products-table td {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+  .product-title {
+    max-width: 150px;
+  }
+  .percentage-bar {
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: flex-start;
+  }
+  .percentage-fill {
+    width: 100%;
+    max-width: 80px;
   }
 }
 </style>
