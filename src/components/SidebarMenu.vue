@@ -16,16 +16,16 @@
         <img v-if="!isCollapsed || isMobileView" src="@/assets/Logo-JDigital-black1.png" class="logo" alt="JDigital"/>
 
         <button v-if="isMobileView" @click="closeMobileMenu" class="collapse-btn">
-            <X class="h-6 w-6" />
+          <X class="h-6 w-6" />
         </button>
         
         <template v-else>
-            <button v-if="!isCollapsed" @click="toggleCollapse" class="collapse-btn">
-                <ChevronLeft />
-            </button>
-            <button v-else @click="toggleCollapse" class="collapse-btn mx-auto">
-                <Menu class="h-6 w-6" />
-            </button>
+          <button v-if="!isCollapsed" @click="toggleCollapse" class="collapse-btn">
+            <ChevronLeft />
+          </button>
+          <button v-else @click="toggleCollapse" class="collapse-btn mx-auto">
+            <Menu class="h-6 w-6" />
+          </button>
         </template>
       </div>
 
@@ -49,7 +49,7 @@
               <span v-show="!isCollapsed || isMobileView">Google Ads</span>
             </RouterLink>
           </li>
-          <li>
+          <li v-if="hasEcommerce">
             <RouterLink to="/wordpress" @click="closeMobileMenu" class="nav-link" :class="{ active: currentRoute === '/wordpress' }">
               <Globe class="icon" />
               <span v-show="!isCollapsed || isMobileView">Tienda en línea</span>
@@ -101,18 +101,15 @@ const router = useRouter();
 
 const isCollapsed = ref(false);
 const isMobileOpen = ref(false);
-
-// --- NUEVA LÓGICA PARA DETECTAR EL TAMAÑO DE LA PANTALLA ---
 const isMobileView = ref(window.innerWidth < 1024);
+const hasEcommerce = ref(false); // Variable para el estado del e-commerce
 
 const checkScreenSize = () => {
   isMobileView.value = window.innerWidth < 1024;
-  // Si la pantalla se hace grande, cerramos el menú móvil
   if (!isMobileView.value) {
     isMobileOpen.value = false;
   }
 };
-// --- FIN DE LA NUEVA LÓGICA ---
 
 const currentRoute = computed(() => route.path);
 
@@ -135,24 +132,49 @@ const closeMobileMenu = () => {
   isMobileOpen.value = false;
 };
 
+// Función para obtener los datos del cliente y su perfil
+const fetchClientData = async () => {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (user) {
+            const { data, error } = await supabase
+                .from('clientes')
+                .select('has_ecommerce')
+                .eq('id', user.id)
+                .single();
+
+            if (error) {
+                console.error("Error al obtener los datos del cliente:", error);
+                return;
+            }
+
+            if (data) {
+                hasEcommerce.value = data.has_ecommerce;
+            }
+        }
+    } catch (error) {
+        console.error("Error en la autenticación o al buscar datos:", error.message);
+    }
+};
+
 onMounted(() => {
   window.addEventListener('toggle-mobile-sidebar', handleToggleMobile);
-  // Añadimos el listener para el tamaño de la ventana
   window.addEventListener('resize', checkScreenSize);
+  fetchClientData(); // Llama a la función al montar el componente
 });
 
 onUnmounted(() => {
   window.removeEventListener('toggle-mobile-sidebar', handleToggleMobile);
-  // Quitamos el listener para el tamaño de la ventana
   window.removeEventListener('resize', checkScreenSize);
 });
 </script>
 
 <style scoped>
-/* No se necesitan cambios en el CSS, pero se deja como referencia */
-.sidebar {
+/* No se necesitan cambios en el CSS */
+.sidebar { 
   width: var(--sidebar-width);
-  background-color: var(--color-bg-dark);
+  background-color: var(--color-bg-dark); 
   height: 100vh;
   position: fixed;
   top: 0;

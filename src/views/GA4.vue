@@ -42,7 +42,6 @@
               <InfoTooltip text="Personas que interactuaron con tu sitio" />
             </div>
             <h3 class="kpi-value">{{ formatNumber(kpiData.activeUsers) }}</h3>
-            <div class="kpi-trend" :class="getTrendClass('users')"><component :is="usersTrend === 'up' ? ArrowUpIcon : ArrowDownIcon" class="h-4 w-4" /><span>{{ usersChange }}%</span></div>
           </div>
           <div class="kpi-card">
             <div class="kpi-header">
@@ -50,7 +49,6 @@
               <InfoTooltip text="Total de visitas, incluyendo múltiples visitas del mismo usuario" />
             </div>
             <h3 class="kpi-value">{{ formatNumber(kpiData.sessions) }}</h3>
-            <div class="kpi-trend" :class="getTrendClass('sessions')"><component :is="sessionsTrend === 'up' ? ArrowUpIcon : ArrowDownIcon" class="h-4 w-4" /><span>{{ sessionsChange }}%</span></div>
           </div>
           <div class="kpi-card">
             <div class="kpi-header">
@@ -58,7 +56,6 @@
                 <InfoTooltip text="Tiempo promedio que los usuarios pasan en tu sitio" />
             </div>
             <h3 class="kpi-value">{{ formatDuration(kpiData.avgSessionDuration) }}</h3>
-            <div class="kpi-trend" :class="getTrendClass('duration')"><component :is="durationTrend === 'up' ? ArrowUpIcon : ArrowDownIcon" class="h-4 w-4" /><span>{{ durationChange }}%</span></div>
           </div>
           <div class="kpi-card">
             <div class="kpi-header">
@@ -66,7 +63,6 @@
                 <InfoTooltip text="Porcentaje de visitas que abandonaron tu sitio sin interactuar" />
             </div>
             <h3 class="kpi-value">{{ formatPercentage(kpiData.bounceRate) }}</h3>
-            <div class="kpi-trend" :class="getTrendClass('bounce')"><component :is="bounceTrend === 'up' ? ArrowDownIcon : ArrowUpIcon" class="h-4 w-4" /><span>{{ bounceChange }}%</span></div>
           </div>
           <div class="kpi-card">
             <div class="kpi-header">
@@ -74,7 +70,6 @@
                 <InfoTooltip text="Número promedio de páginas vistas durante cada sesión" />
             </div>
             <h3 class="kpi-value">{{ kpiData.pagesPerSession.toFixed(2) }}</h3>
-            <div class="kpi-trend" :class="getTrendClass('pages')"><component :is="pagesTrend === 'up' ? ArrowUpIcon : ArrowDownIcon" class="h-4 w-4" /><span>{{ pagesChange }}%</span></div>
           </div>
         </template>
       </section>
@@ -173,16 +168,6 @@ const isLoadingChart = ref<boolean>(true);
 const isLoadingTable = ref<boolean>(true);
 const fetchError = ref<string | null>(null);
 const chartKey = ref<number>(0);
-const usersTrend = ref<'up' | 'down'>('up');
-const usersChange = ref<number>(0);
-const sessionsTrend = ref<'up' | 'down'>('up');
-const sessionsChange = ref<number>(0);
-const durationTrend = ref<'up' | 'down'>('up');
-const durationChange = ref<number>(0);
-const bounceTrend = ref<'up' | 'down'>('up');
-const bounceChange = ref<number>(0);
-const pagesTrend = ref<'up' | 'down'>('up');
-const pagesChange = ref<number>(0);
 interface DailyMetric { date: string; sessions: number; users: number; bounce_rate: number; avg_session_duration: number; page_views: number; }
 interface DeviceMetric { dimension_value: string; users: number; }
 interface ChannelMetric { dimension_value: string; users: number; }
@@ -198,7 +183,6 @@ const gaConversions = ref<ConversionMetric[]>([]);
 const formatNumber = (value: number) => (value === null || isNaN(value)) ? '0' : Math.round(value).toLocaleString();
 const formatDuration = (seconds: number) => { if (seconds === null || isNaN(seconds) || seconds < 0) return '00:00'; const m = Math.floor(seconds / 60); const s = Math.floor(seconds % 60); return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`; };
 const formatPercentage = (value: number) => (value === null || isNaN(value)) ? '0.00%' : `${(value * 100).toFixed(2)}%`.replace('NaN', '0.00');
-const getTrendClass = (metric: string) => { switch (metric) { case 'users': return usersTrend.value === 'up' ? 'text-green-500' : 'text-red-500'; case 'sessions': return sessionsTrend.value === 'up' ? 'text-green-500' : 'text-red-500'; case 'duration': return durationTrend.value === 'up' ? 'text-green-500' : 'text-red-500'; case 'bounce': return bounceTrend.value === 'up' ? 'text-red-500' : 'text-green-500'; case 'pages': return pagesTrend.value === 'up' ? 'text-green-500' : 'text-red-500'; default: return 'text-gray-500'; } };
 const getDateRange = (range: string) => { 
   const endDate = new Date(); 
   const startDate = new Date(); 
@@ -228,7 +212,7 @@ const timeAgo = computed(() => { if (!lastUpdated.value) return ''; const now = 
 const kpiData = computed(() => { if (gaDailyMetrics.value.length === 0) { return { activeUsers: 0, sessions: 0, avgSessionDuration: 0, bounceRate: 0, pagesPerSession: 0, pageViews: 0 }; } const totalUsers = gaDailyMetrics.value.reduce((sum, row) => sum + (row.users || 0), 0); const totalSessions = gaDailyMetrics.value.reduce((sum, row) => sum + (row.sessions || 0), 0); const totalPageViews = gaDailyMetrics.value.reduce((sum, row) => sum + (row.page_views || 0), 0); const totalAvgSessionDuration = gaDailyMetrics.value.reduce((sum, row) => sum + (row.avg_session_duration || 0), 0); const avgSessionDuration = gaDailyMetrics.value.length > 0 ? totalAvgSessionDuration / gaDailyMetrics.value.length : 0; const totalBounceRate = gaDailyMetrics.value.reduce((sum, row) => sum + (row.bounce_rate || 0), 0); const avgBounceRate = gaDailyMetrics.value.length > 0 ? totalBounceRate / gaDailyMetrics.value.length : 0; return { activeUsers: totalUsers, sessions: totalSessions, avgSessionDuration: avgSessionDuration, bounceRate: avgBounceRate, pagesPerSession: totalSessions > 0 ? totalPageViews / totalSessions : 0 }; });
 const totalConversions = computed(() => { return gaConversions.value.reduce((sum, item) => sum + Number(item.total_conversions || 0), 0); });
 const conversionRate = computed(() => { if (kpiData.value.sessions === 0) return 0; return totalConversions.value / kpiData.value.sessions; });
-const keyInsight = computed(() => { if (gaDailyMetrics.value.length === 0) return null; if (conversionRate.value > 0.05) { return { icon: Target, title: '¡Excelente Tasa de Conversión!', text: `Tu tasa de conversión es del ${formatPercentage(conversionRate.value)}, lo que indica un gran rendimiento. ¡Sigue así!` }; } if (usersTrend.value === 'up' && usersChange.value > 50) { return { icon: TrendingUp, title: '¡Excelente Crecimiento!', text: `El número de usuarios activos ha aumentado un ${usersChange.value.toFixed(2)}% en la segunda mitad de este período. ¡Tu estrategia de adquisición está funcionando muy bien!` }; } if (channelChartData.value.labels.length > 0) { const topChannel = channelChartData.value.labels[0]; return { icon: Target, title: 'Tu Canal Principal', text: `La mayoría de tus usuarios están llegando a través de '${topChannel}'. Considera potenciar las campañas en este canal para maximizar resultados.` }; } if (durationTrend.value === 'up' && durationChange.value > 10) { return { icon: Clock, title: 'Mayor Interés de los Usuarios', text: `La duración media de la sesión ha mejorado un ${durationChange.value.toFixed(2)}%. Los usuarios encuentran tu contenido cada vez más valioso.` }; } return { icon: Users, title: 'Rendimiento General', text: `Durante este período, has alcanzado un total de ${formatNumber(kpiData.value.activeUsers)} usuarios a través de ${formatNumber(kpiData.value.sessions)} sesiones.` }; });
+const keyInsight = computed(() => { if (gaDailyMetrics.value.length === 0) return null; if (conversionRate.value > 0.05) { return { icon: Target, title: '¡Excelente Tasa de Conversión!', text: `Tu tasa de conversión es del ${formatPercentage(conversionRate.value)}, lo que indica un gran rendimiento. ¡Sigue así!` }; } if (channelChartData.value.labels.length > 0) { const topChannel = channelChartData.value.labels[0]; return { icon: Target, title: 'Tu Canal Principal', text: `La mayoría de tus usuarios están llegando a través de '${topChannel}'. Considera potenciar las campañas en este canal para maximizar resultados.` }; } return { icon: Users, title: 'Rendimiento General', text: `Durante este período, has alcanzado un total de ${formatNumber(kpiData.value.activeUsers)} usuarios a través de ${formatNumber(kpiData.value.sessions)} sesiones.` }; });
 const displayDateRange = computed(() => { const { startDate, endDate } = getDateRange(timeRange.value); const formatDisplayDate = (dateString: string) => { const date = new Date(dateString + 'T00:00:00'); return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }); }; const startYear = new Date(startDate + 'T00:00:00').getFullYear(); const endYear = new Date(endDate + 'T00:00:00').getFullYear(); if (startYear !== endYear) { return `${formatDisplayDate(startDate)}, ${startYear} - ${formatDisplayDate(endDate)}, ${endYear}`; } return `${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)} de ${endYear}`; });
 const sessionsChartData = computed(() => ({ labels: [...gaDailyMetrics.value].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(row => new Date(row.date).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })), datasets: [{ label: 'Sesiones', data: [...gaDailyMetrics.value].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(row => row.sessions || 0), borderColor: '#92d000', backgroundColor: 'rgba(146, 208, 0, 0.2)', tension: 0.4, fill: true, pointBackgroundColor: '#92d000', pointBorderColor: '#fff', pointHoverBackgroundColor: '#fff', pointHoverBorderColor: '#92d000', }], }));
 const deviceChartData = computed(() => { const deviceMap = gaDeviceMetrics.value.reduce((acc: { [key: string]: number }, item) => { acc[item.dimension_value] = (acc[item.dimension_value] || 0) + (item.users || 0); return acc; }, {}); return { labels: Object.keys(deviceMap), datasets: [{ label: 'Usuarios', data: Object.values(deviceMap), backgroundColor: ['#4F46E5', '#3B82F6', '#8B5CF6'], borderColor: '#2a2a2a', borderWidth: 1, }], }; });
@@ -241,7 +225,7 @@ const isMobile = ref(false);
 const checkScreenSize = () => { isMobile.value = window.innerWidth < 1024; };
 const responsiveDoughnutChartOptions = computed(() => { const options = JSON.parse(JSON.stringify(doughnutChartOptions)); if (isMobile.value) { options.plugins.legend.position = 'bottom'; options.plugins.legend.labels.padding = 20; } else { options.plugins.legend.position = 'right'; options.plugins.legend.labels.padding = 10; } return options; });
 const fetchClientInfo = async () => { fetchError.value = null; try { const { data: { user }, error: userError } = await supabase.auth.getUser(); if (userError || !user) throw new Error('Usuario no autenticado o error al obtener usuario.'); const { data: clientData, error: clientError } = await supabase.from('clientes').select('id, empresa').eq('auth_id', user.id).single(); if (clientError) throw new Error(`Error al cargar info del cliente: ${clientError.message}`); clientName.value = clientData?.empresa || 'Cliente Desconocido'; clientGaId.value = clientData?.id; if (!clientGaId.value) throw new Error('No se pudo vincular el usuario a un cliente con un ID de GA.'); } catch (err: any) { console.error('Error en fetchClientInfo:', err); fetchError.value = err.message; } };
-const fetchGaDailyMetrics = async () => { if (!clientGaId.value) { gaDailyMetrics.value = []; return; } const { startDate, endDate } = getDateRange(timeRange.value); const { data, error } = await supabase.rpc('get_daily_analytics_data', { p_client_id: clientGaId.value, p_start_date: startDate, p_end_date: endDate }); if (error) throw error; gaDailyMetrics.value = data || []; if (data && data.length > 1) { const halfLength = Math.floor(data.length / 2); const firstHalf = data.slice(0, halfLength); const secondHalf = data.slice(halfLength); const sumField = (arr: any[], field: string) => arr.reduce((sum, row) => sum + (row[field] || 0), 0); const avgField = (arr: any[], field: string) => arr.length > 0 ? sumField(arr, field) / arr.length : 0; const calculateChange = (current: number, previous: number) => { if (previous === 0) return current > 0 ? 100 : 0; return parseFloat(((current - previous) / previous * 100).toFixed(2)); }; const firstUsers = sumField(firstHalf, 'users'); const secondUsers = sumField(secondHalf, 'users'); usersTrend.value = secondUsers >= firstUsers ? 'up' : 'down'; usersChange.value = Math.abs(calculateChange(secondUsers, firstUsers)); const firstSessions = sumField(firstHalf, 'sessions'); const secondSessions = sumField(secondHalf, 'sessions'); sessionsTrend.value = secondSessions >= firstSessions ? 'up' : 'down'; sessionsChange.value = Math.abs(calculateChange(secondSessions, firstSessions)); const firstDuration = avgField(firstHalf, 'avg_session_duration'); const secondDuration = avgField(secondHalf, 'avg_session_duration'); durationTrend.value = secondDuration >= firstDuration ? 'up' : 'down'; durationChange.value = Math.abs(calculateChange(secondDuration, firstDuration)); const firstBounce = avgField(firstHalf, 'bounce_rate'); const secondBounce = avgField(secondHalf, 'bounce_rate'); bounceTrend.value = secondBounce >= firstBounce ? 'up' : 'down'; bounceChange.value = Math.abs(calculateChange(secondBounce, firstBounce)); const firstPagesViews = sumField(firstHalf, 'page_views'); const secondPagesViews = sumField(secondHalf, 'page_views'); const firstPagesPerSession = firstSessions > 0 ? firstPagesViews / firstSessions : 0; const secondPagesPerSession = secondSessions > 0 ? secondPagesViews / secondSessions : 0; pagesTrend.value = secondPagesPerSession >= firstPagesPerSession ? 'up' : 'down'; pagesChange.value = Math.abs(calculateChange(secondPagesPerSession, firstPagesPerSession)); } else { usersChange.value = 0; sessionsChange.value = 0; durationChange.value = 0; bounceChange.value = 0; pagesChange.value = 0; } };
+const fetchGaDailyMetrics = async () => { if (!clientGaId.value) { gaDailyMetrics.value = []; return; } const { startDate, endDate } = getDateRange(timeRange.value); const { data, error } = await supabase.rpc('get_daily_analytics_data', { p_client_id: clientGaId.value, p_start_date: startDate, p_end_date: endDate }); if (error) throw error; gaDailyMetrics.value = data || []; };
 const fetchGaDeviceMetrics = async () => { if (!clientGaId.value) { gaDeviceMetrics.value = []; return; } const { startDate, endDate } = getDateRange(timeRange.value); const { data, error } = await supabase.rpc('get_device_analytics_data', { p_client_id: clientGaId.value, p_start_date: startDate, p_end_date: endDate }); if (error) throw error; gaDeviceMetrics.value = data || []; };
 const fetchGaChannelMetrics = async () => { if (!clientGaId.value) { gaChannelMetrics.value = []; return; } const { startDate, endDate } = getDateRange(timeRange.value); const { data, error } = await supabase.rpc('get_channel_analytics_data', { p_client_id: clientGaId.value, p_start_date: startDate, p_end_date: endDate }); if (error) throw error; gaChannelMetrics.value = data || []; };
 const fetchMostVisitedPages = async () => { if (!clientGaId.value) { mostVisitedPages.value = []; return; } const { startDate, endDate } = getDateRange(timeRange.value); const { data, error } = await supabase.rpc('get_most_visited_pages_data', { p_client_id: clientGaId.value, p_start_date: startDate, p_end_date: endDate }); if (error) throw error; gaPageMetrics.value = data || []; mostVisitedPages.value = gaPageMetrics.value
