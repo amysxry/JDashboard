@@ -38,7 +38,7 @@
         <template v-else>
           <div class="kpi-card">
             <div class="kpi-header">
-              <p class="kpi-title">Usuarios Activos</p>
+              <p class="kpi-title">Total de Usuarios</p>
               <InfoTooltip text="Personas que interactuaron con tu sitio" />
             </div>
             <h3 class="kpi-value">{{ formatNumber(kpiData.activeUsers) }}</h3>

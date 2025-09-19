@@ -405,24 +405,19 @@ const fetchSeoData = async (clienteId) => {
   try {
     const { data, error } = await supabase
       .from('seo_rankings')
-      .select('position, previous_position, created_at, monitored_keywords(keyword)')
-      .eq('cliente_id', clienteId)
-      .order('created_at', { ascending: false });
+      .select('keyword, position, previous_position')
+      .eq('cliente_id', clienteId);
+      // No se usa .order() porque no hay columna de fecha
+
     if (error) throw error;
     
-    const latestKeywords = {};
-    data.forEach(row => {
-      const keywordText = row.monitored_keywords?.keyword;
-      if (keywordText && !latestKeywords[keywordText]) {
-        latestKeywords[keywordText] = {
-          term: keywordText,
-          position: row.position,
-          change: row.previous_position !== null ? (row.previous_position - row.position) : 0,
-          lastUpdate: new Date(row.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })
-        };
-      }
-    });
-    seoKeywords.value = Object.values(latestKeywords);
+    // Formatear los datos para que coincidan con la vista
+    seoKeywords.value = data.map(row => ({
+      term: row.keyword,
+      position: row.position,
+      change: row.previous_position !== null ? (row.previous_position - row.position) : 0
+      // Ya no hay lastUpdate
+    }));
   } catch(err) {
     console.error('Error al cargar datos de SEO:', err);
     seoKeywords.value = [];

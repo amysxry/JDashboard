@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div v-if="isDataLoaded">
     <div
       v-if="isMobileOpen"
       class="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
@@ -85,6 +85,9 @@
       </nav>
     </aside>
   </div>
+  <div v-else>
+    <p>Cargando menú...</p>
+  </div>
 </template>
 
 <script setup>
@@ -102,7 +105,8 @@ const router = useRouter();
 const isCollapsed = ref(false);
 const isMobileOpen = ref(false);
 const isMobileView = ref(window.innerWidth < 1024);
-const hasEcommerce = ref(false); // Variable para el estado del e-commerce
+const hasEcommerce = ref(false); 
+const isDataLoaded = ref(false); // Nueva variable para controlar la carga
 
 const checkScreenSize = () => {
   isMobileView.value = window.innerWidth < 1024;
@@ -132,7 +136,6 @@ const closeMobileMenu = () => {
   isMobileOpen.value = false;
 };
 
-// Función para obtener los datos del cliente y su perfil
 const fetchClientData = async () => {
     try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -141,27 +144,40 @@ const fetchClientData = async () => {
             const { data, error } = await supabase
                 .from('clientes')
                 .select('has_ecommerce')
-                .eq('id', user.id)
+                .eq('auth_id', user.id)
                 .single();
 
             if (error) {
                 console.error("Error al obtener los datos del cliente:", error);
+                // Si hay error, por defecto no mostrar ecommerce
+                hasEcommerce.value = false;
+                isDataLoaded.value = true;
                 return;
             }
 
             if (data) {
-                hasEcommerce.value = data.has_ecommerce;
+                hasEcommerce.value = data.has_ecommerce || false;
+            } else {
+                // Si no hay datos, por defecto no mostrar ecommerce
+                hasEcommerce.value = false;
             }
+        } else {
+            // Si no hay usuario autenticado
+            hasEcommerce.value = false;
         }
     } catch (error) {
         console.error("Error en la autenticación o al buscar datos:", error.message);
+        // En caso de error, por defecto no mostrar ecommerce
+        hasEcommerce.value = false;
+    } finally {
+        isDataLoaded.value = true;
     }
 };
 
 onMounted(() => {
   window.addEventListener('toggle-mobile-sidebar', handleToggleMobile);
   window.addEventListener('resize', checkScreenSize);
-  fetchClientData(); // Llama a la función al montar el componente
+  fetchClientData();
 });
 
 onUnmounted(() => {
