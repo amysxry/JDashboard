@@ -1,17 +1,16 @@
 <template>
-  <div v-if="isDataLoaded">
-    <div
-      v-if="isMobileOpen"
-      class="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
-      @click="closeMobileMenu"
-    ></div>
+  <div
+    v-if="isMobileOpen"
+    class="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+    @click="closeMobileMenu"
+  ></div>
 
-    <aside
-      :class="['sidebar', {
-        'sidebar-collapsed': isCollapsed,
-        'sidebar-open-mobile': isMobileOpen,
-      }]"
-    >
+  <aside
+    :class="['sidebar', {
+      'sidebar-collapsed': isCollapsed,
+      'sidebar-open-mobile': isMobileOpen,
+    }]"
+  >
       <div class="sidebar-header">
         <img v-if="!isCollapsed || isMobileView" src="@/assets/Logo-JDigital-black1.png" class="logo" alt="JDigital"/>
 
@@ -61,12 +60,6 @@
               <span v-show="!isCollapsed || isMobileView">Asana</span>
             </RouterLink>
           </li>
-          <li>
-            <RouterLink to="/reports" @click="closeMobileMenu" class="nav-link" :class="{ active: currentRoute === '/reports' }">
-              <FileText class="icon" />
-              <span v-show="!isCollapsed || isMobileView">Reportes</span>
-            </RouterLink>
-          </li>
           
           <li class="mt-auto">
             <RouterLink to="/config" @click="closeMobileMenu" class="nav-link" :class="{ active: currentRoute === '/config' }">
@@ -84,10 +77,6 @@
         </ul>
       </nav>
     </aside>
-  </div>
-  <div v-else>
-    <p>Cargando menú...</p>
-  </div>
 </template>
 
 <script setup>
@@ -96,7 +85,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { supabase } from '@/lib/supabaseClient';
 import {
   LayoutDashboard, BarChart3, Target, Globe, CheckSquare,
-  FileText, Settings, ChevronLeft, Menu, LogOut, X
+  Settings, ChevronLeft, Menu, LogOut, X
 } from 'lucide-vue-next';
 
 const route = useRoute();
@@ -105,8 +94,7 @@ const router = useRouter();
 const isCollapsed = ref(false);
 const isMobileOpen = ref(false);
 const isMobileView = ref(window.innerWidth < 1024);
-const hasEcommerce = ref(false); 
-const isDataLoaded = ref(false); // Nueva variable para controlar la carga
+const hasEcommerce = ref(false);
 
 const checkScreenSize = () => {
   isMobileView.value = window.innerWidth < 1024;
@@ -149,28 +137,21 @@ const fetchClientData = async () => {
 
             if (error) {
                 console.error("Error al obtener los datos del cliente:", error);
-                // Si hay error, por defecto no mostrar ecommerce
                 hasEcommerce.value = false;
-                isDataLoaded.value = true;
                 return;
             }
 
             if (data) {
                 hasEcommerce.value = data.has_ecommerce || false;
             } else {
-                // Si no hay datos, por defecto no mostrar ecommerce
                 hasEcommerce.value = false;
             }
         } else {
-            // Si no hay usuario autenticado
             hasEcommerce.value = false;
         }
     } catch (error) {
         console.error("Error en la autenticación o al buscar datos:", error.message);
-        // En caso de error, por defecto no mostrar ecommerce
         hasEcommerce.value = false;
-    } finally {
-        isDataLoaded.value = true;
     }
 };
 

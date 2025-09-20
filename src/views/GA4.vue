@@ -89,20 +89,20 @@
           <template v-else><div class="chart-container"><Line :key="chartKey" :data="sessionsChartData" :options="chartOptions" /></div></template>
         </div>
         <div class="chart-card">
-            <div class="chart-header">
-                <h3 class="chart-title">Usuarios por Dispositivo</h3>
-                <InfoTooltip text="Distribución del tráfico por tipo de dispositivo" />
-            </div>
-            <template v-if="isLoadingChart || fetchError"><div class="chart-placeholder">{{ fetchError ? 'Error al cargar la gráfica.' : 'Cargando gráfica...' }}</div></template>
-            <template v-else><div class="chart-container"><Bar :key="chartKey" :data="deviceChartData" :options="chartOptions" /></div></template>
-        </div>
-        <div class="chart-card">
           <div class="chart-header">
             <h3 class="chart-title">Usuarios por Canal</h3>
             <InfoTooltip text="Fuentes de tráfico que llevan usuarios a tu sitio" />
           </div>
           <template v-if="isLoadingChart || fetchError"><div class="chart-placeholder">{{ fetchError ? 'Error al cargar la gráfica.' : 'Cargando gráfica...' }}</div></template>
           <template v-else><div class="chart-container chart-container-doughnut"><Doughnut :key="chartKey" :data="channelChartData" :options="responsiveDoughnutChartOptions" /></div></template>
+        </div>
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3 class="chart-title">Usuarios por Dispositivo</h3>
+                <InfoTooltip text="Distribución del tráfico por tipo de dispositivo" />
+            </div>
+            <template v-if="isLoadingChart || fetchError"><div class="chart-placeholder">{{ fetchError ? 'Error al cargar la gráfica.' : 'Cargando gráfica...' }}</div></template>
+            <template v-else><div class="chart-container"><Bar :key="chartKey" :data="deviceChartData" :options="chartOptions" /></div></template>
         </div>
       </section>
 

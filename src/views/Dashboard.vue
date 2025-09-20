@@ -407,7 +407,6 @@ const fetchSeoData = async (clienteId) => {
       .from('seo_rankings')
       .select('keyword, position, previous_position')
       .eq('cliente_id', clienteId);
-      // No se usa .order() porque no hay columna de fecha
 
     if (error) throw error;
     
@@ -415,8 +414,8 @@ const fetchSeoData = async (clienteId) => {
     seoKeywords.value = data.map(row => ({
       term: row.keyword,
       position: row.position,
-      change: row.previous_position !== null ? (row.previous_position - row.position) : 0
-      // Ya no hay lastUpdate
+      change: row.previous_position !== null ? (row.previous_position - row.position) : 0,
+      lastUpdate: 'Reciente' // Valor fijo ya que no hay timestamp
     }));
   } catch(err) {
     console.error('Error al cargar datos de SEO:', err);

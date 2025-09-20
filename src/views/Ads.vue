@@ -43,13 +43,7 @@
             </div>
             <h3 class="kpi-value">{{ formatCurrency(kpiSummary.totalCost) }}</h3>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-header">
-              <p class="kpi-title">Campañas Activas</p>
-              <InfoTooltip text="Campañas activas" />
-            </div>
-            <h3 class="kpi-value">{{ formatNumber(kpiSummary.activeCampaigns) }}</h3>
-          </div>
+
           <div class="kpi-card">
             <div class="kpi-header">
               <p class="kpi-title">Impresiones</p>
@@ -90,42 +84,7 @@
         </div>
       </section>
 
-      <section class="campaigns-section">
-        <div class="campaigns-card">
-          <div class="campaigns-header">
-            <h3 class="campaigns-title">Campañas Activas</h3>
-            <div class="campaigns-count">{{ campaignsData.length }} campañas</div>
-          </div>
-          <template v-if="isLoading || fetchError">
-            <div class="campaigns-placeholder">{{ fetchError ? 'Error al cargar las campañas.' : 'Cargando campañas...' }}</div>
-          </template>
-          <template v-else-if="campaignsData.length === 0">
-            <div class="campaigns-placeholder">No hay campañas activas en el período seleccionado.</div>
-          </template>
-          <template v-else>
-            <div class="campaigns-table-container">
-              <table class="campaigns-table">
-                <thead>
-                  <tr>
-                    <th>Campaña</th>
-                    <th>Impresiones</th>
-                    <th>CPC</th>
-                    <th>Costo Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="campaign in campaignsData" :key="campaign.id" class="campaign-row">
-                    <td class="campaign-name">{{ campaign.name }}</td>
-                    <td class="campaign-metric">{{ formatNumber(campaign.impressions) }}</td>
-                    <td class="campaign-metric">{{ formatCurrency(campaign.clicks > 0 ? campaign.cost / campaign.clicks : 0) }}</td>
-                    <td class="campaign-metric campaign-cost">{{ formatCurrency(campaign.cost) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </template>
-        </div>
-      </section>
+
     </main>
   </div>
 </template>
@@ -188,7 +147,7 @@ const dateDisplayString = computed(() => {
 
 const kpiSummary = computed(() => {
   if (performanceReport.value.length === 0) {
-    return { totalCost: 0, activeCampaigns: 0, totalImpressions: 0, totalClicks: 0, avgCpc: 0, totalConversions: 0 };
+    return { totalCost: 0, totalImpressions: 0, totalClicks: 0, avgCpc: 0, totalConversions: 0 };
   }
   const totalCost = performanceReport.value.reduce((sum, row) => sum + (row.cost_micros || 0), 0) / 1000000;
   const totalImpressions = performanceReport.value.reduce((sum, row) => sum + (row.impressions || 0), 0);
@@ -196,20 +155,7 @@ const kpiSummary = computed(() => {
   const totalConversions = performanceReport.value.reduce((sum, row) => sum + (row.conversions || 0), 0);
   const avgCpc = totalClicks > 0 ? totalCost / totalClicks : 0;
   
-  // Usar la misma lógica que campaignsData para coherencia
-  const campaignMap = new Map();
-  performanceReport.value.forEach(row => {
-    const campaignName = row.campaign_name || `Campaña ${row.campaign_id || 'Sin ID'}`;
-    const campaignKey = campaignName.toLowerCase().trim();
-    
-    if ((row.impressions > 0 || row.clicks > 0 || row.cost_micros > 0) && !campaignMap.has(campaignKey)) {
-      campaignMap.set(campaignKey, true);
-    }
-  });
-  
-  const activeCampaigns = campaignMap.size;
-  
-  return { totalCost, activeCampaigns, totalImpressions, totalClicks, avgCpc, totalConversions };
+  return { totalCost, totalImpressions, totalClicks, avgCpc, totalConversions };
 });
 
 const conversionsClicksChartData = computed(() => {
@@ -431,39 +377,7 @@ async function fetchData() {
   }
 }
 
-const campaignsData = computed(() => {
-  if (performanceReport.value.length === 0) return [];
-  
-  const campaignMap = new Map();
-  
-  performanceReport.value.forEach(row => {
-    // Mejorar el manejo de nombres de campaña
-    const campaignName = row.campaign_name?.trim() || `Campaña ${row.campaign_id || 'Sin ID'}`;
-    const campaignKey = campaignName.toLowerCase().trim();
-    
-    if (!campaignMap.has(campaignKey)) {
-      campaignMap.set(campaignKey, {
-        id: row.campaign_id || campaignKey,
-        name: campaignName,
-        impressions: 0,
-        clicks: 0,
-        cost: 0,
-        conversions: 0
-      });
-    }
-    
-    const campaign = campaignMap.get(campaignKey);
-    campaign.impressions += row.impressions || 0;
-    campaign.clicks += row.clicks || 0;
-    campaign.cost += (row.cost_micros || 0) / 1000000;
-    campaign.conversions += row.conversions || 0;
-  });
-  
-  return Array.from(campaignMap.values())
-    .filter(campaign => campaign.impressions > 0 || campaign.clicks > 0 || campaign.cost > 0)
-    .sort((a, b) => b.cost - a.cost)
-    .slice(0, 15); // Aumentar a 15 para más campañas
-});
+
 
 function formatCurrency(value: number) {
   return `$${(value || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
@@ -767,147 +681,6 @@ watch(timeRange, fetchData);
   to { opacity: 1; }
 }
 
-/* CAMPAIGNS SECTION STYLES */
-.campaigns-section {
-  margin-top: 1rem;
-}
-
-.campaigns-card {
-  background: linear-gradient(135deg, #2a2a2a 0%, #252525 100%);
-  border-radius: 1rem;
-  padding: 1.5rem;
-  border: 1px solid #3b3b3b;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
-  position: relative;
-  overflow: hidden;
-}
-
-.campaigns-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #92d000, #f59e0b);
-  border-radius: 1rem 1rem 0 0;
-}
-
-.campaigns-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.campaigns-title {
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: #ffffff;
-  margin: 0;
-  background: linear-gradient(135deg, #ffffff, #e0e0e0);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.campaigns-count {
-  background: rgba(146, 208, 0, 0.15);
-  color: #92d000;
-  padding: 0.5rem 1rem;
-  border-radius: 50px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  border: 1px solid rgba(146, 208, 0, 0.3);
-}
-
-.campaigns-table-container {
-  overflow-x: auto;
-  border-radius: 0.75rem;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.campaigns-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: transparent;
-}
-
-.campaigns-table th {
-  background: linear-gradient(135deg, #3b3b3b, #333333);
-  color: #92d000;
-  font-weight: 600;
-  font-size: 0.9rem;
-  padding: 1rem;
-  text-align: left;
-  border-bottom: 2px solid rgba(146, 208, 0, 0.3);
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-
-.campaigns-table th:first-child {
-  border-radius: 0.75rem 0 0 0;
-}
-
-.campaigns-table th:last-child {
-  border-radius: 0 0.75rem 0 0;
-}
-
-.campaign-row {
-  transition: all 0.2s ease;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.campaign-row:hover {
-  background: rgba(146, 208, 0, 0.08);
-  transform: translateX(2px);
-}
-
-.campaign-row:last-child {
-  border-bottom: none;
-}
-
-.campaign-name {
-  font-weight: 500;
-  color: #ffffff;
-  padding: 1rem;
-  max-width: 250px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.campaign-metric {
-  color: #e0e0e0;
-  padding: 1rem;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  font-size: 0.9rem;
-}
-
-.campaign-cost {
-  color: #92d000;
-  font-weight: 600;
-}
-
-.campaigns-placeholder {
-  text-align: center;
-  color: #aaa;
-  padding: 3rem 2rem;
-  background: linear-gradient(135deg, #3b3b3b, #333333);
-  border-radius: 0.75rem;
-  min-height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
 /* RESPONSIVE DESIGN */
 @media (max-width: 820px) {
   .header-divider {
@@ -939,14 +712,6 @@ watch(timeRange, fetchData);
   .chart-container {
     height: 300px;
     padding: 0.75rem;
-  }
-  
-  .campaigns-card {
-    padding: 1rem;
-  }
-  
-  .campaigns-title {
-    font-size: 1.2rem;
   }
 }
 
@@ -983,29 +748,11 @@ watch(timeRange, fetchData);
     height: 280px;
     padding: 0.5rem;
   }
-  
-  .campaigns-table th,
-  .campaigns-table td {
-    padding: 0.75rem 0.5rem;
-    font-size: 0.8rem;
-  }
-  
-  .campaign-name {
-    max-width: 150px;
-  }
 }
 
 @media (max-width: 480px) {
   .kpis-section {
     grid-template-columns: 1fr;
-  }
-  
-  .campaigns-table-container {
-    overflow-x: scroll;
-  }
-  
-  .campaigns-table {
-    min-width: 600px;
   }
 }
 </style>

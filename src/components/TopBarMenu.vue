@@ -15,15 +15,16 @@
         <div v-else class="user-avatar-initials">{{ userStore.initials }}</div>
       </div>
       
-      <button class="action-btn">
-        <Bell class="h-5 w-5" />
-      </button>
+      <div class="status-indicator">
+        <div class="status-dot"></div>
+        <span class="status-text">En línea</span>
+      </div>
     </div>
   </header>
 </template>
 
 <script setup>
-import { Bell, Menu } from 'lucide-vue-next';
+import { Menu } from 'lucide-vue-next';
 import { useUserStore } from '@/stores/user';
 
 const userStore = useUserStore();
@@ -121,31 +122,71 @@ const toggleMobileSidebar = () => {
   font-size: 0.9rem;
 }
 
-.hamburger-btn { display: none; }
-
-.action-btn {
+.status-indicator {
   display: flex;
   align-items: center;
-  justify-content: center;
-  background-color: var(--color-bg-dark);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-secondary);
-  width: 38px;
-  height: 38px;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: linear-gradient(135deg, rgba(146, 208, 0, 0.1), rgba(146, 208, 0, 0.05));
+  border: 1px solid rgba(146, 208, 0, 0.2);
   border-radius: var(--border-radius-md);
-  cursor: pointer;
   transition: all 0.2s ease;
-  flex-shrink: 0;
 }
-.action-btn:hover {
-  border-color: #555;
-  color: #fff;
+
+.status-indicator:hover {
+  background: linear-gradient(135deg, rgba(146, 208, 0, 0.15), rgba(146, 208, 0, 0.08));
+  border-color: rgba(146, 208, 0, 0.3);
+  transform: translateY(-1px);
 }
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #92d000;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(146, 208, 0, 0.6);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.7; 
+    transform: scale(1.1);
+  }
+}
+
+.status-text {
+  color: var(--color-text-primary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.hamburger-btn { display: none; }
 
 /* --- ZONA RESPONSIVA --- */
 @media (max-width: 1024px) {
   .user-name {
     display: none;
+  }
+  
+  .status-text {
+    display: none;
+  }
+  
+  .status-indicator {
+    padding: 0.5rem;
+    background: transparent;
+    border: none;
+  }
+  
+  .status-indicator:hover {
+    background: transparent;
+    transform: none;
   }
 }
 
@@ -165,6 +206,10 @@ const toggleMobileSidebar = () => {
   }
   .navbar-right {
     gap: 0.75rem; /* Mantenemos el espacio reducido en móvil */
+  }
+  
+  .status-indicator {
+    display: none; /* Ocultamos completamente en móvil */
   }
 }
 </style>
