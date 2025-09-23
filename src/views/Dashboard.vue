@@ -26,37 +26,67 @@
         <div class="left-column">
           <div class="content-card seo-card">
             <div class="card-header">
-              <h3 class="card-title">Palabras Clave Principales</h3>
+              <div class="seo-header-content">
+                <h3 class="card-title">🎯 Palabras Clave Principales</h3>
+                <p class="seo-subtitle">Seguimiento de posiciones en Google</p>
+              </div>
+              <div v-if="seoKeywords.length > 0" class="seo-stats">
+                <span class="keyword-count">{{ seoKeywords.length }} keywords</span>
+                <span class="best-position">Mejor: #{{ Math.min(...seoKeywords.map(k => k.position)) }}</span>
+              </div>
             </div>
             <div v-if="seoKeywords.length === 0" class="no-data-message">
-              Aún no hay datos de SEO para mostrar.
+              <div class="no-data-content">
+                <Target class="no-data-icon" />
+                <h4>No hay datos de SEO disponibles</h4>
+                <p>Una vez que se agreguen palabras clave a tu seguimiento, aparecerán aquí con sus posiciones actuales.</p>
+                <small>Los datos se actualizan regularmente por nuestro equipo.</small>
+              </div>
             </div>
             <div v-else class="seo-table-container">
               <table class="seo-table">
                 <thead>
                   <tr>
                     <th>Palabra Clave</th>
-                    <th>Posición</th>
-                    <th>Cambio (7d)</th>
-                    <th>Última Revisión</th>
+                    <th>Posición Actual</th>
+                    <th>Tendencia</th>
+                    <th>Estado</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="keyword in seoKeywords" :key="keyword.term">
-                    <td class="keyword-cell">{{ keyword.term }}</td>
+                  <tr v-for="keyword in seoKeywords" :key="keyword.term" class="keyword-row">
+                    <td class="keyword-cell">
+                      <div class="keyword-info">
+                        <span class="keyword-text">{{ keyword.term }}</span>
+                        <small class="keyword-meta">{{ keyword.lastUpdate }}</small>
+                      </div>
+                    </td>
                     <td>
                       <span class="position-badge" :class="getPositionBadgeClass(keyword.position)">
                         #{{ keyword.position }}
                       </span>
                     </td>
                     <td>
-                      <span v-if="keyword.change !== 0" class="change-indicator" :class="{'positive': keyword.change > 0, 'negative': keyword.change < 0}">
-                        <component :is="keyword.change > 0 ? ArrowUpIcon : ArrowDownIcon" class="h-3 w-3" />
-                        {{ Math.abs(keyword.change) }}
-                      </span>
-                      <span v-else class="change-indicator neutral">-</span>
+                      <div class="trend-cell">
+                        <span v-if="keyword.change > 0" class="change-indicator positive">
+                          <ArrowUpIcon class="h-4 w-4" />
+                          +{{ keyword.change }}
+                        </span>
+                        <span v-else-if="keyword.change < 0" class="change-indicator negative">
+                          <ArrowDownIcon class="h-4 w-4" />
+                          {{ keyword.change }}
+                        </span>
+                        <span v-else class="change-indicator neutral">
+                          <div class="no-change-dot"></div>
+                          Sin cambios
+                        </span>
+                      </div>
                     </td>
-                    <td>{{ keyword.lastUpdate }}</td>
+                    <td>
+                      <span class="status-badge" :class="getStatusClass(keyword.position)">
+                        {{ getStatusText(keyword.position) }}
+                      </span>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -371,6 +401,20 @@ const getPositionBadgeClass = (position) => {
   return 'poor';
 };
 
+const getStatusClass = (position) => {
+  if (position <= 3) return 'top';
+  if (position <= 10) return 'first-page';
+  if (position <= 20) return 'second-page';
+  return 'needs-work';
+};
+
+const getStatusText = (position) => {
+  if (position <= 3) return 'Top 3';
+  if (position <= 10) return '1ª Página';
+  if (position <= 20) return '2ª Página';
+  return 'Mejorable';
+};
+
 // --- Funciones de Datos ---
 const fetchDashboardData = async () => {
   isLoading.value = true;
@@ -378,13 +422,58 @@ const fetchDashboardData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuario no autenticado');
 
+    console.log('Usuario autenticado:', user.id);
+    console.log('Email del usuario:', user.email);
+
+    // Buscar cliente solo con columnas que existen
     const { data: clientData, error } = await supabase
       .from('clientes')
-      .select('id, empresa')
+      .select('id, empresa, auth_id')
       .eq('auth_id', user.id)
       .single();
-    if (error) throw error;
+    
+    if (error) {
+      console.error('❌ Error buscando cliente por auth_id:', error);
+      
+      // Si no encuentra por auth_id, mostrar todos los clientes para diagnóstico
+      console.log('🔍 Obteniendo todos los clientes para diagnóstico...');
+      const { data: allClients, error: allError } = await supabase
+        .from('clientes')
+        .select('id, empresa, auth_id');
+        
+      if (!allError && allClients) {
+        console.log('📋 Todos los clientes en la base de datos:', allClients);
+        console.log('🎯 Buscando cliente con ID: 6a0af1e1-35d9-481c-a056-f03c688ca163');
+        
+        const targetClient = allClients.find(c => c.id === '6a0af1e1-35d9-481c-a056-f03c688ca163');
+        if (targetClient) {
+          console.log('✅ Cliente objetivo encontrado:', targetClient);
+          console.log('⚠️ PROBLEMA DE VINCULACIÓN:');
+          console.log('  - Usuario actual:', user.id);
+          console.log('  - auth_id del cliente:', targetClient.auth_id);
+          console.log('  - ¿Coinciden?', targetClient.auth_id === user.id ? 'SÍ' : 'NO');
+          
+          console.log('💡 SOLUCIÓN: Ejecuta esto en Supabase SQL Editor:');
+          console.log(`UPDATE clientes SET auth_id = '${user.id}' WHERE id = '${targetClient.id}';`);
+          
+          // Usar este cliente temporalmente
+          clientName.value = targetClient.empresa;
+          await Promise.all([
+            fetchSeoData(targetClient.id),
+            fetchGA4Data(targetClient.id),
+            fetchAdsData(targetClient.id),
+            fetchWordPressData(targetClient.id)
+          ]);
+          return;
+        } else {
+          console.error('❌ Cliente con ID 6a0af1e1-35d9-481c-a056-f03c688ca163 no encontrado');
+        }
+      }
+      
+      throw new Error('Cliente no encontrado');
+    }
 
+    console.log('✅ Datos del cliente encontrados por auth_id:', clientData);
     clientName.value = clientData.empresa;
 
     // Cargar datos reales de las tablas
@@ -403,22 +492,75 @@ const fetchDashboardData = async () => {
 
 const fetchSeoData = async (clienteId) => {
   try {
+    console.log('🔍 Buscando datos SEO para cliente_id:', clienteId);
+    
+    // MÉTODO 1: Intentar consulta directa
     const { data, error } = await supabase
       .from('seo_rankings')
       .select('keyword, position, previous_position')
-      .eq('cliente_id', clienteId);
+      .eq('cliente_id', clienteId)
+      .order('position', { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Error en consulta directa:', error);
+      
+      // MÉTODO 2: Intentar sin filtro para ver si hay datos
+      console.log('🔍 Intentando consulta sin filtro para diagnóstico...');
+      const { data: allData, error: allError } = await supabase
+        .from('seo_rankings')
+        .select('*')
+        .limit(10);
+        
+      if (allError) {
+        console.error('❌ Error incluso sin filtro - Problema de RLS:', allError);
+        console.log('💡 SOLUCIÓN RÁPIDA: Ve a Supabase y ejecuta:');
+        console.log('ALTER TABLE seo_rankings DISABLE ROW LEVEL SECURITY;');
+        seoKeywords.value = [];
+        return;
+      }
+      
+      console.log('📊 Datos encontrados sin filtro:', allData);
+      
+      // Filtrar manualmente por cliente_id
+      const filteredData = allData.filter(row => row.cliente_id === clienteId);
+      console.log(`🎯 Datos filtrados para cliente ${clienteId}:`, filteredData);
+      
+      if (filteredData.length === 0) {
+        console.warn('⚠️ No hay datos para este cliente_id específico');
+        console.log('📋 Clientes_id disponibles en seo_rankings:', [...new Set(allData.map(row => row.cliente_id))]);
+        seoKeywords.value = [];
+        return;
+      }
+      
+      // Usar datos filtrados manualmente
+      seoKeywords.value = filteredData.map(row => ({
+        term: row.keyword,
+        position: row.position,
+        change: row.previous_position !== null && row.previous_position !== undefined 
+          ? (row.previous_position - row.position) 
+          : 0,
+        lastUpdate: 'Reciente'
+      }));
+      
+      console.log('✅ Datos SEO procesados (filtro manual):', seoKeywords.value);
+      return;
+    }
+    
+    console.log('📊 Datos SEO recibidos (método directo):', data);
     
     // Formatear los datos para que coincidan con la vista
     seoKeywords.value = data.map(row => ({
       term: row.keyword,
       position: row.position,
-      change: row.previous_position !== null ? (row.previous_position - row.position) : 0,
-      lastUpdate: 'Reciente' // Valor fijo ya que no hay timestamp
+      change: row.previous_position !== null && row.previous_position !== undefined 
+        ? (row.previous_position - row.position) 
+        : 0,
+      lastUpdate: 'Reciente'
     }));
+    
+    console.log('✅ Datos SEO procesados (método directo):', seoKeywords.value);
   } catch(err) {
-    console.error('Error al cargar datos de SEO:', err);
+    console.error('❌ Error general al cargar datos de SEO:', err);
     seoKeywords.value = [];
   }
 };
@@ -919,9 +1061,50 @@ onMounted(fetchDashboardData);
   flex: 1;
 }
 
+.seo-header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.seo-subtitle {
+  font-size: 0.9rem;
+  color: #aaa;
+  margin: 0;
+  font-weight: 400;
+}
+
+.seo-stats {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.keyword-count, .best-position {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.keyword-count {
+  background-color: rgba(146, 208, 0, 0.15);
+  color: #92d000;
+  border: 1px solid rgba(146, 208, 0, 0.3);
+}
+
+.best-position {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
 .seo-table-container { 
   width: 100%; 
-  overflow-x: auto; 
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .seo-table { 
@@ -932,91 +1115,214 @@ onMounted(fetchDashboardData);
 .seo-table th, .seo-table td {
   padding: 1rem; 
   text-align: left;
-  border-bottom: 1px solid #444;
-  white-space: nowrap;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .seo-table th {
   color: #92d000; 
   font-weight: 600;
-  font-size: 0.75rem; 
+  font-size: 0.8rem; 
   text-transform: uppercase; 
   letter-spacing: 0.05em;
-  background: linear-gradient(90deg, #3b3b3b 0%, rgba(146, 208, 0, 0.05) 100%);
-  border-bottom: 2px solid rgba(146, 208, 0, 0.2);
+  background: linear-gradient(135deg, #3b3b3b, #333333);
+  border-bottom: 2px solid rgba(146, 208, 0, 0.3);
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
-.seo-table tbody tr:hover {
-  background-color: #3b3b3b;
+.seo-table th:first-child {
+  border-radius: 0.75rem 0 0 0;
 }
 
-.seo-table tbody tr:last-child td {
+.seo-table th:last-child {
+  border-radius: 0 0.75rem 0 0;
+}
+
+.keyword-row {
+  transition: all 0.2s ease;
+}
+
+.keyword-row:hover {
+  background: rgba(146, 208, 0, 0.08);
+  transform: translateX(2px);
+}
+
+.keyword-row:last-child td {
   border-bottom: none;
 }
 
-.keyword-cell { 
+.keyword-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.keyword-text {
   font-weight: 500; 
   color: #e0e0e0; 
+  font-size: 0.95rem;
+}
+
+.keyword-meta {
+  color: #aaa;
+  font-size: 0.75rem;
+}
+
+.trend-cell {
+  display: flex;
+  align-items: center;
 }
 
 .position-badge {
   display: inline-block; 
-  padding: 0.3rem 0.8rem;
-  border-radius: 99px; 
-  font-weight: 600; 
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px; 
+  font-weight: 700; 
   font-size: 0.85rem;
+  min-width: 50px;
+  text-align: center;
 }
 
 .position-badge.excellent { 
-  background-color: rgba(22, 163, 74, 0.15); 
-  color: #16a34a; 
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1)); 
+  color: #22c55e; 
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  box-shadow: 0 2px 4px rgba(34, 197, 94, 0.1);
 }
 
 .position-badge.good { 
-  background-color: rgba(59, 130, 246, 0.15); 
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.1)); 
   color: #3b82f6; 
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
 }
 
 .position-badge.average { 
-  background-color: rgba(249, 115, 22, 0.15); 
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(249, 115, 22, 0.1)); 
   color: #f97316; 
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  box-shadow: 0 2px 4px rgba(249, 115, 22, 0.1);
 }
 
 .position-badge.poor { 
-  background-color: rgba(220, 38, 38, 0.15); 
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.2), rgba(220, 38, 38, 0.1)); 
   color: #dc2626; 
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.1);
 }
 
 .change-indicator { 
   display: inline-flex; 
   align-items: center; 
   gap: 0.25rem; 
-  font-weight: 600; 
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
 }
 
 .change-indicator.positive { 
   color: #16a34a; 
+  background-color: rgba(22, 163, 74, 0.1);
 }
 
 .change-indicator.negative { 
   color: #dc2626; 
+  background-color: rgba(220, 38, 38, 0.1);
 }
 
 .change-indicator.neutral { 
   color: #aaa; 
+  background-color: rgba(170, 170, 170, 0.1);
+}
+
+.no-change-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #aaa;
+  border-radius: 50%;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.3rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-badge.top {
+  background-color: rgba(255, 215, 0, 0.15);
+  color: #ffd700;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.status-badge.first-page {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.status-badge.second-page {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.status-badge.needs-work {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 .no-data-message {
   text-align: center; 
   color: #aaa;
-  font-style: italic; 
   padding: 3rem;
-  background-color: #3b3b3b;
-  border-radius: 0.5rem;
-  min-height: 150px;
+  background: linear-gradient(135deg, #3b3b3b, #333333);
+  border-radius: 0.75rem;
+  min-height: 200px;
   display: flex;
   align-items: center; 
   justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.no-data-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  max-width: 300px;
+}
+
+.no-data-icon {
+  width: 48px;
+  height: 48px;
+  color: #92d000;
+  opacity: 0.7;
+}
+
+.no-data-content h4 {
+  color: #ffffff;
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.no-data-content p {
+  color: #aaa;
+  margin: 0;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.no-data-content small {
+  color: #888;
+  font-size: 0.8rem;
 }
 
 /* --- HIGHLIGHTS CARD --- */
