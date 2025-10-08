@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabaseClient';
 
 // Vistas
 import Login from '@/views/Login.vue';
+import ResetPassword from '@/views/ResetPassword.vue';
 import Dashboard from '@/views/Dashboard.vue';
 import GA4 from '@/views/GA4.vue';
 import Ads from '@/views/Ads.vue';
@@ -19,6 +20,12 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: Login,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: ResetPassword,
     meta: { requiresAuth: false }
   },
   // Rutas protegidas (por autenticación)

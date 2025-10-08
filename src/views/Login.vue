@@ -51,6 +51,70 @@
             <div v-else class="spinner"></div>
           </button>
         </form>
+
+        <div class="recovery-link">
+          <button 
+            type="button" 
+            @click="showPasswordRecovery" 
+            class="forgot-password-btn"
+          >
+            ¿Olvidaste tu contraseña?
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Recuperación de Contraseña -->
+    <div v-if="showRecoveryForm" class="recovery-modal-overlay" @click="hidePasswordRecovery">
+      <div class="recovery-modal" @click.stop>
+        <div class="recovery-header">
+          <h3 class="recovery-title">Recuperar Contraseña</h3>
+          <button @click="hidePasswordRecovery" class="close-btn">
+            ✕
+          </button>
+        </div>
+
+        <div class="recovery-content">
+          <p class="recovery-description">
+            Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
+          </p>
+
+          <form @submit.prevent="handlePasswordRecovery" class="recovery-form">
+            <div class="input-group">
+              <label for="recovery-email" class="input-label">Correo Electrónico</label>
+              <input 
+                id="recovery-email"
+                v-model="emailRecovery" 
+                type="email" 
+                class="form-input" 
+                placeholder="tu@email.com"
+                required 
+              />
+            </div>
+            
+            <p v-if="recoveryError" class="error-message">{{ recoveryError }}</p>
+            
+            <div v-if="recoverySuccess" class="success-message">
+              ✅ Se ha enviado un enlace de recuperación a tu correo electrónico. 
+              Revisa tu bandeja de entrada y sigue las instrucciones.
+            </div>
+
+            <button 
+              type="submit" 
+              class="recovery-button" 
+              :disabled="recoveryLoading || recoverySuccess"
+            >
+              <span v-if="!recoveryLoading">{{ recoverySuccess ? 'Enlace Enviado' : 'Enviar Enlace' }}</span>
+              <div v-else class="spinner"></div>
+            </button>
+          </form>
+
+          <div class="recovery-footer">
+            <button @click="hidePasswordRecovery" class="back-to-login-btn">
+              Volver al inicio de sesión
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -70,8 +134,29 @@ const loading = ref(false);
 const router = useRouter();
 const passwordFieldType = ref('password');
 
+// Estados para recuperación de contraseña
+const showRecoveryForm = ref(false);
+const emailRecovery = ref('');
+const recoveryError = ref('');
+const recoveryLoading = ref(false);
+const recoverySuccess = ref(false);
+
 const togglePasswordVisibility = () => {
   passwordFieldType.value = passwordFieldType.value === 'password' ? 'text' : 'password';
+};
+
+const showPasswordRecovery = () => {
+  showRecoveryForm.value = true;
+  recoveryError.value = '';
+  recoverySuccess.value = false;
+  emailRecovery.value = '';
+};
+
+const hidePasswordRecovery = () => {
+  showRecoveryForm.value = false;
+  recoveryError.value = '';
+  recoverySuccess.value = false;
+  emailRecovery.value = '';
 };
 
 const handleLogin = async () => {
@@ -88,6 +173,47 @@ const handleLogin = async () => {
     error.value = 'Las credenciales no son correctas.';
   } finally {
     loading.value = false;
+  }
+};
+
+const handlePasswordRecovery = async () => {
+  if (!emailRecovery.value) {
+    recoveryError.value = 'Por favor, ingresa tu correo electrónico.';
+    return;
+  }
+
+  recoveryError.value = '';
+  recoveryLoading.value = true;
+  recoverySuccess.value = false;
+
+  try {
+    const redirectUrl = `${window.location.origin}/reset-password`;
+    
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+      emailRecovery.value,
+      {
+        redirectTo: redirectUrl
+      }
+    );
+
+    if (resetError) {
+      throw resetError;
+    }
+
+    recoverySuccess.value = true;
+    recoveryError.value = '';
+  } catch (err) {
+    console.error('Error al enviar correo de recuperación:', err);
+    
+    if (err.message?.includes('Email not confirmed')) {
+      recoveryError.value = 'El correo electrónico no ha sido confirmado. Verifica tu bandeja de entrada.';
+    } else if (err.message?.includes('User not found')) {
+      recoveryError.value = 'No existe una cuenta asociada a este correo electrónico.';
+    } else {
+      recoveryError.value = 'Error al enviar el correo. Por favor, intenta nuevamente.';
+    }
+  } finally {
+    recoveryLoading.value = false;
   }
 };
 </script>
@@ -295,6 +421,161 @@ const handleLogin = async () => {
   margin-bottom: -0.5rem;
 }
 
+/* --- Mensaje de Éxito --- */
+.success-message {
+  background-color: rgba(146, 208, 0, 0.1);
+  color: var(--color-primary);
+  border: 1px solid rgba(146, 208, 0, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin: 0.5rem 0;
+}
+
+/* --- Enlace de Recuperación --- */
+.recovery-link {
+  text-align: center;
+  margin-top: 1.5rem;
+}
+
+.forgot-password-btn {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.forgot-password-btn:hover {
+  color: #A8F000;
+}
+
+/* --- Modal de Recuperación de Contraseña --- */
+.recovery-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.recovery-modal {
+  background-color: var(--color-bg-panel);
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  width: 100%;
+  max-width: 450px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.recovery-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 1.5rem 0 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 1.5rem;
+}
+
+.recovery-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.close-btn:hover {
+  background-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.recovery-content {
+  padding: 0 1.5rem 1.5rem 1.5rem;
+}
+
+.recovery-description {
+  color: var(--color-text-secondary);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.recovery-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.recovery-button {
+  background-color: var(--color-primary);
+  color: #000;
+  font-weight: 600;
+  padding: 0.85rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+}
+
+.recovery-button:hover:not(:disabled) {
+  background-color: #A8F000;
+  transform: translateY(-1px);
+}
+
+.recovery-button:disabled {
+  background-color: var(--color-border);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.recovery-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.back-to-login-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: color 0.2s ease;
+}
+
+.back-to-login-btn:hover {
+  color: var(--color-text-primary);
+}
+
 /* --- Diseño Responsivo --- */
 @media (max-width: 768px) {
   .login-page {
@@ -308,6 +589,17 @@ const handleLogin = async () => {
     height: 100%;
     justify-content: flex-start;
     padding-top: 4rem;
+  }
+  
+  .recovery-modal {
+    margin: 1rem;
+    max-width: none;
+  }
+  
+  .recovery-header,
+  .recovery-content {
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 }
 
