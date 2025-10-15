@@ -70,6 +70,7 @@ onUnmounted(() => {
 .main-content {
   flex-grow: 1; /* Hace que el contenido principal ocupe el espacio vertical restante */
   overflow-y: auto; /* Permite el scroll si el contenido es muy largo */
+  overflow-x: auto; /* Permite el scroll horizontal si el contenido es muy ancho */
 }
 
 /* En pantallas móviles, el contenedor vuelve a su estado normal y ocupa todo el ancho */

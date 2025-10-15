@@ -263,7 +263,27 @@ onMounted(() => {
   display: grid; 
   grid-template-columns: repeat(auto-fill, minmax(450px, 1fr)); 
   gap: 1.5rem; 
-  align-items: start; 
+  align-items: start;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(146, 208, 0, 0.2) transparent;
+}
+
+.project-grid::-webkit-scrollbar {
+  height: 6px;
+}
+
+.project-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.project-grid::-webkit-scrollbar-thumb {
+  background: rgba(146, 208, 0, 0.2);
+  border-radius: 3px;
+}
+
+.project-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(146, 208, 0, 0.3);
 }
 
 @media (max-width: 480px) {

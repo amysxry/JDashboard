@@ -170,7 +170,7 @@ const highlights = computed(() => {
     if (ga4Data.value.conversion_rate >= 5) {
       results.push({
         title: '¡Excelente Tasa de Conversión!',
-        description: `Tu tasa de conversión es del ${ga4Data.value.conversion_rate}%, lo que indica un gran rendimiento. ¡Sigue así!`,
+        description: `Tu tasa de conversión es del ${ga4Data.value.conversion_rate}%, lo que indica que el tráfico que el sitio recibe es de muy buena calidad.`,
         type: 'success',
         icon: Target,
         source: 'ga4',
@@ -180,7 +180,7 @@ const highlights = computed(() => {
     } else if (ga4Data.value.conversion_rate >= 2) {
       results.push({
         title: 'Buena Tasa de Conversión',
-        description: `Tu tasa de conversión del ${ga4Data.value.conversion_rate}% está por encima del promedio. ¡Hay espacio para crecer!`,
+        description: `Tu tasa de conversión del ${ga4Data.value.conversion_rate}% está por encima del promedio. Seguiremos buscando subir este ratio con nuevas optimizaciones.`,
         type: 'good',
         icon: Target,
         source: 'ga4',
@@ -203,7 +203,7 @@ const highlights = computed(() => {
     if (ga4Data.value.bounce_rate <= 30) {
       results.push({
         title: '¡Excelente Engagement!',
-        description: `Con un ${ga4Data.value.bounce_rate}% de rebote, tus visitantes están muy comprometidos con tu contenido.`,
+        description: `Con un ${ga4Data.value.bounce_rate}% de rebote, los visitantes encuentran muy relevante el contenido del sitio.`,
         type: 'success',
         icon: MousePointer,
         source: 'ga4',
@@ -213,7 +213,7 @@ const highlights = computed(() => {
     } else if (ga4Data.value.bounce_rate <= 50) {
       results.push({
         title: 'Buen Engagement',
-        description: `Tu porcentaje de rebote del ${ga4Data.value.bounce_rate}% está en un rango aceptable para tu industria.`,
+        description: `Tu porcentaje de rebote del ${ga4Data.value.bounce_rate}% está por encima del rango de tu nicho.`,
         type: 'good',
         icon: MousePointer,
         source: 'ga4',
@@ -236,7 +236,7 @@ const highlights = computed(() => {
     } else if (ga4Data.value.sessions_growth > 0) {
       results.push({
         title: 'Crecimiento Positivo',
-        description: `Un crecimiento del ${ga4Data.value.sessions_growth}% en sesiones muestra que vas en la dirección correcta.`,
+        description: `Un crecimiento del ${ga4Data.value.sessions_growth}% en sesiones muestra que lo que se ha implementado en el periodo ha tenido buena respuesta.`,
         type: 'good',
         icon: TrendingUp,
         source: 'ga4',
@@ -252,7 +252,7 @@ const highlights = computed(() => {
     if (adsData.value.ctr >= 4) {
       results.push({
         title: '¡CTR Sobresaliente!',
-        description: `Tu CTR del ${adsData.value.ctr}% es excepcional y supera ampliamente el promedio de la industria.`,
+        description: `Tu CTR del ${adsData.value.ctr}% es excepcional y supera ampliamente el promedio de tu nicho.`,
         type: 'success',
         icon: MousePointer,
         source: 'ads',
@@ -262,7 +262,7 @@ const highlights = computed(() => {
     } else if (adsData.value.ctr >= 2) {
       results.push({
         title: 'Excelente CTR',
-        description: `Tu CTR del ${adsData.value.ctr}% supera el promedio. Tus anuncios están bien optimizados.`,
+        description: `Tu CTR del ${adsData.value.ctr}% estamos logrando que los anuncios publicados sean de interés para la audiencia.`,
         type: 'success',
         icon: MousePointer,
         source: 'ads',
@@ -285,7 +285,7 @@ const highlights = computed(() => {
     } else if (adsData.value.roas >= 200) {
       results.push({
         title: 'Buen ROAS',
-        description: `Tu ROAS del ${adsData.value.roas}% muestra una inversión publicitaria rentable.`,
+        description: `Tu ROAS del ${adsData.value.roas}% muestra que la inversión publicitaria está siendo bien optimizada.`,
         type: 'good',
         icon: Target,
         source: 'ads',
@@ -297,7 +297,7 @@ const highlights = computed(() => {
     // Crecimiento de conversiones
     if (adsData.value.conversions_growth > 25) {
       results.push({
-        title: '¡Conversiones en Alza!',
+        title: '¡Las conversiones crecen!',
         description: `Tus conversiones han aumentado ${adsData.value.conversions_growth}% vs. el período anterior.`,
         type: 'success',
         icon: Target,
@@ -314,7 +314,7 @@ const highlights = computed(() => {
     if (wordpressData.value.sales_growth > 30) {
       results.push({
         title: '¡Ventas en Aumento!',
-        description: `Tus ventas han crecido ${wordpressData.value.sales_growth}% comparado con el período anterior. ¡Excelente trabajo!`,
+        description: `Tus ventas han crecido ${wordpressData.value.sales_growth}% comparado con el período anterior. ¡Excelente trabajo en equipo!`,
         type: 'success',
         icon: TrendingUp,
         source: 'wordpress',
@@ -323,8 +323,8 @@ const highlights = computed(() => {
       });
     } else if (wordpressData.value.sales_growth > 0) {
       results.push({
-        title: 'Crecimiento en Ventas',
-        description: `Un crecimiento del ${wordpressData.value.sales_growth}% en ventas muestra una tendencia positiva.`,
+        title: 'Crecimiento en Venta',
+        description: `Hemos logrado un incremento en ventas de ${wordpressData.value.sales_growth}% , como siempre esperamos escuchar tu feedback para saber lo que esto representa en tu negocio.`,
         type: 'good',
         icon: TrendingUp,
         source: 'wordpress',
@@ -337,7 +337,7 @@ const highlights = computed(() => {
     if (wordpressData.value.average_ticket >= 100) {
       results.push({
         title: '¡Excelente Ticket Promedio!',
-        description: `Con un ticket promedio de $${wordpressData.value.average_ticket.toFixed(2)}, tus clientes valoran tus productos.`,
+        description: `El ticket promedio de $${wordpressData.value.average_ticket.toFixed(2)}, representa el rango de valor que los usuarios dan a tu producto.`,
         type: 'success',
         icon: Target,
         source: 'wordpress',
@@ -759,6 +759,21 @@ onMounted(fetchDashboardData);
   box-sizing: border-box;
   background-color: var(--color-bg-dark);
   position: relative;
+  overflow-x: auto; /* Allow horizontal scroll */
+  min-width: 0; /* Prevent width constraints */
+}
+
+/* Responsive padding */
+@media (max-width: 768px) {
+  .page-content-wrapper {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-content-wrapper {
+    padding: 0.75rem;
+  }
 }
 
 .page-content-wrapper::before {
@@ -803,6 +818,24 @@ onMounted(fetchDashboardData);
   padding: 2rem 0;
 }
 
+/* Responsive header */
+@media (max-width: 1024px) {
+  .page-header {
+    margin-bottom: 2rem;
+    padding: 1.5rem 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem 0;
+  }
+}
+
 .page-header::before {
   content: '';
   position: absolute;
@@ -843,6 +876,25 @@ onMounted(fetchDashboardData);
   position: relative;
 }
 
+/* Responsive title sizes */
+@media (max-width: 1024px) {
+  .welcome-title {
+    font-size: 2.2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .welcome-title {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .welcome-title {
+    font-size: 1.75rem;
+  }
+}
+
 .welcome-title::after {
   content: '✨';
   position: absolute;
@@ -850,6 +902,13 @@ onMounted(fetchDashboardData);
   top: -0.5rem;
   font-size: 1.5rem;
   animation: sparkle 2s ease-in-out infinite;
+}
+
+@media (max-width: 480px) {
+  .welcome-title::after {
+    right: -1.5rem;
+    font-size: 1.2rem;
+  }
 }
 
 @keyframes sparkle {
@@ -871,6 +930,19 @@ onMounted(fetchDashboardData);
   opacity: 0.9;
 }
 
+/* Responsive subtitle */
+@media (max-width: 768px) {
+  .welcome-subtitle {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .welcome-subtitle {
+    font-size: 1rem;
+  }
+}
+
 .date-display {
   display: flex;
   align-items: center;
@@ -883,6 +955,22 @@ onMounted(fetchDashboardData);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   position: relative;
   overflow: hidden;
+}
+
+/* Responsive date display */
+@media (max-width: 768px) {
+  .date-display {
+    gap: 1rem;
+    padding: 0.875rem 1.25rem;
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .date-display {
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
 }
 
 .date-display::before {
@@ -925,11 +1013,23 @@ onMounted(fetchDashboardData);
   text-transform: capitalize;
 }
 
+@media (max-width: 480px) {
+  .date-main {
+    font-size: 1rem;
+  }
+}
+
 .date-sub {
   font-size: 0.9rem;
   color: #92d000;
   font-weight: 600;
   letter-spacing: 0.5px;
+}
+
+@media (max-width: 480px) {
+  .date-sub {
+    font-size: 0.8rem;
+  }
 }
 
 /* --- GRILLA Y TARJETAS --- */
@@ -938,12 +1038,40 @@ onMounted(fetchDashboardData);
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
   position: relative;
+  overflow-x: auto;
+  min-width: 0; /* Prevent grid from creating overflow issues */
+}
+
+/* Responsive grid */
+@media (max-width: 1024px) {
+  .content-grid {
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
 }
 
 .left-column, .right-column {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .left-column, .right-column {
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .left-column, .right-column {
+    gap: 1rem;
+  }
 }
 
 .content-card {
@@ -957,6 +1085,21 @@ onMounted(fetchDashboardData);
   flex-direction: column;
   position: relative;
   overflow: hidden;
+}
+
+/* Responsive card padding */
+@media (max-width: 768px) {
+  .content-card {
+    padding: 1.25rem;
+    border-radius: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .content-card {
+    padding: 1rem;
+    border-radius: 0.75rem;
+  }
 }
 
 .content-card::before {
@@ -989,6 +1132,19 @@ onMounted(fetchDashboardData);
   margin: 0;
 }
 
+/* Responsive card titles */
+@media (max-width: 768px) {
+  .card-title {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-title {
+    font-size: 1.1rem;
+  }
+}
+
 .card-label {
   font-size: 0.9rem;
   color: #aaa;
@@ -996,11 +1152,30 @@ onMounted(fetchDashboardData);
   font-weight: 500;
 }
 
+@media (max-width: 480px) {
+  .card-label {
+    font-size: 0.85rem;
+  }
+}
+
 /* --- TARJETAS PEQUEÑAS (SALDO Y ANÁLISIS) --- */
 .balance-card, .insight-card {
   flex-direction: row;
   align-items: flex-start;
   gap: 1.5rem;
+}
+
+/* Responsive small cards */
+@media (max-width: 768px) {
+  .balance-card, .insight-card {
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .balance-card, .insight-card {
+    gap: 1rem;
+  }
 }
 
 .card-icon-bg {
@@ -1012,6 +1187,15 @@ onMounted(fetchDashboardData);
   justify-content: center;
   flex-shrink: 0;
   margin-top: 0.5rem;
+}
+
+/* Responsive icon size */
+@media (max-width: 480px) {
+  .card-icon-bg {
+    width: 40px;
+    height: 40px;
+    margin-top: 0.25rem;
+  }
 }
 
 .balance-card .card-icon-bg { 
@@ -1038,10 +1222,29 @@ onMounted(fetchDashboardData);
   margin: 0.5rem 0;
 }
 
+/* Responsive balance value */
+@media (max-width: 768px) {
+  .balance-value {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .balance-value {
+    font-size: 1.75rem;
+  }
+}
+
 .card-description { 
   font-size: 0.8rem; 
   color: #828282; 
   margin: 0;
+}
+
+@media (max-width: 480px) {
+  .card-description {
+    font-size: 0.75rem;
+  }
 }
 
 .insight-text {
@@ -1049,6 +1252,18 @@ onMounted(fetchDashboardData);
   color: #e0e0e0;
   line-height: 1.4;
   margin: 0;
+}
+
+@media (max-width: 768px) {
+  .insight-text {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .insight-text {
+    font-size: 0.9rem;
+  }
 }
 
 .insight-text strong { 
@@ -1102,20 +1317,65 @@ onMounted(fetchDashboardData);
 .seo-table-container { 
   width: 100%; 
   overflow-x: auto;
+  overflow-y: visible;
   border-radius: 0.75rem;
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.05);
+  /* Ensure scrollbar is visible and styled */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(146, 208, 0, 0.3) rgba(0, 0, 0, 0.1);
+}
+
+.seo-table-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.seo-table-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.seo-table-container::-webkit-scrollbar-thumb {
+  background: rgba(146, 208, 0, 0.3);
+  border-radius: 4px;
+}
+
+.seo-table-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(146, 208, 0, 0.5);
 }
 
 .seo-table { 
   width: 100%; 
   border-collapse: collapse; 
+  min-width: 600px; /* Ensures table doesn't collapse too much on mobile */
 }
 
 .seo-table th, .seo-table td {
   padding: 1rem; 
   text-align: left;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Responsive table padding */
+@media (max-width: 768px) {
+  .seo-table th, .seo-table td {
+    padding: 0.75rem;
+  }
+  
+  .seo-table {
+    min-width: 500px;
+  }
+}
+
+@media (max-width: 480px) {
+  .seo-table th, .seo-table td {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .seo-table {
+    min-width: 450px;
+  }
 }
 
 .seo-table th {
@@ -1334,6 +1594,26 @@ onMounted(fetchDashboardData);
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(146, 208, 0, 0.2) transparent;
+}
+
+.highlights-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.highlights-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.highlights-container::-webkit-scrollbar-thumb {
+  background: rgba(146, 208, 0, 0.2);
+  border-radius: 3px;
+}
+
+.highlights-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(146, 208, 0, 0.3);
 }
 
 .highlight-item {
@@ -1345,6 +1625,21 @@ onMounted(fetchDashboardData);
   border-left: 4px solid;
   position: relative;
   transition: all 0.3s ease;
+}
+
+/* Responsive highlight items */
+@media (max-width: 768px) {
+  .highlight-item {
+    padding: 0.875rem;
+    gap: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .highlight-item {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
 }
 
 .highlight-item:hover {
@@ -1405,10 +1700,35 @@ onMounted(fetchDashboardData);
   line-height: 1.3;
 }
 
+/* Responsive highlight text */
+@media (max-width: 768px) {
+  .highlight-title {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .highlight-title {
+    font-size: 0.9rem;
+  }
+}
+
 .highlight-description {
   font-size: 0.9rem;
   color: #e0e0e0;
   margin: 0;
   line-height: 1.4;
+}
+
+@media (max-width: 768px) {
+  .highlight-description {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .highlight-description {
+    font-size: 0.8rem;
+  }
 }
 </style>

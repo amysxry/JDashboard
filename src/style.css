@@ -44,9 +44,10 @@
   padding: 0;
 }
 
-/* CAMBIO: Se añade para prevenir el scrollbar principal que causa el espacio a la derecha */
+/* Allow horizontal scroll when content overflows */
 html, body {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 body {

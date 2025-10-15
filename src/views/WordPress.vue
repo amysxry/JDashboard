@@ -489,6 +489,8 @@ onMounted(() => {
   padding: 1.5rem;
   width: 100%;
   box-sizing: border-box;
+  overflow-x: auto;
+  min-width: 0;
 }
 
 .page-controls-header {
@@ -608,6 +610,26 @@ onMounted(() => {
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(146, 208, 0, 0.2) transparent;
+}
+
+.kpis-section::-webkit-scrollbar {
+  height: 6px;
+}
+
+.kpis-section::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.kpis-section::-webkit-scrollbar-thumb {
+  background: rgba(146, 208, 0, 0.2);
+  border-radius: 3px;
+}
+
+.kpis-section::-webkit-scrollbar-thumb:hover {
+  background: rgba(146, 208, 0, 0.3);
 }
 
 .kpi-card {
@@ -673,6 +695,26 @@ onMounted(() => {
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(146, 208, 0, 0.2) transparent;
+}
+
+.charts-section::-webkit-scrollbar {
+  height: 6px;
+}
+
+.charts-section::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.charts-section::-webkit-scrollbar-thumb {
+  background: rgba(146, 208, 0, 0.2);
+  border-radius: 3px;
+}
+
+.charts-section::-webkit-scrollbar-thumb:hover {
+  background: rgba(146, 208, 0, 0.3);
 }
 
 .chart-card {
