@@ -43,6 +43,12 @@
             </RouterLink>
           </li>
           <li>
+            <RouterLink to="/ranking-seo" @click="closeMobileMenu" class="nav-link" :class="{ active: currentRoute === '/ranking-seo' }">
+              <Search class="icon" />
+              <span v-show="!isCollapsed || isMobileView">Ranking SEO</span>
+            </RouterLink>
+          </li>
+          <li>
             <RouterLink to="/ads" @click="closeMobileMenu" class="nav-link" :class="{ active: currentRoute === '/ads' }">
               <Target class="icon" />
               <span v-show="!isCollapsed || isMobileView">Google Ads</span>
@@ -85,7 +91,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { supabase } from '@/lib/supabaseClient';
 import {
   LayoutDashboard, BarChart3, Target, Globe, CheckSquare,
-  Settings, ChevronLeft, Menu, LogOut, X
+  Settings, ChevronLeft, Menu, LogOut, X, Search
 } from 'lucide-vue-next';
 
 const route = useRoute();

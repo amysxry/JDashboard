@@ -10,6 +10,7 @@ import Ads from '@/views/Ads.vue';
 import WordPress from '@/views/WordPress.vue';
 import Asana from '@/views/Asana.vue';
 import Configuracion from '@/views/Configuracion.vue';
+import RankingSEO from '@/views/RankingSEO.vue';
 
 // Layout
 import DashboardLayout from '@/components/DashboardLayout.vue';
@@ -37,6 +38,7 @@ const routes = [
       { path: '', redirect: 'dashboard' },
       { path: 'dashboard', name: 'Dashboard', component: Dashboard, meta: { title: 'ㅤ' } },
       { path: 'analytics', name: 'Analytics', component: GA4, meta: { title: 'Google Analytics 4' } },
+      { path: 'ranking-seo', name: 'RankingSEO', component: RankingSEO, meta: { title: 'Ranking SEO' } },
       { path: 'ads', name: 'Ads', component: Ads, meta: { title: 'Google Ads' } },
       { path: 'wordpress', name: 'WordPress', component: WordPress, meta: { title: 'WordPress' } },
       { path: 'asana', name: 'Asana', component: Asana, meta: { title: 'Asana' } },
