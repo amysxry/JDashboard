@@ -31,8 +31,8 @@
                 <p class="seo-subtitle">Seguimiento de posiciones en Google</p>
               </div>
               <div v-if="seoKeywords.length > 0" class="seo-stats">
-                <span class="keyword-count">{{ seoKeywords.length }} keywords</span>
-                <span class="best-position">Mejor: #{{ Math.min(...seoKeywords.map(k => k.position)) }}</span>
+                <span class="keyword-count">Las mejores {{ seoKeywords.length }} kw posicionadas</span>
+                <span class="best-position">#{{ Math.min(...seoKeywords.map(k => k.position)) }} hoy</span>
               </div>
             </div>
             <div v-if="seoKeywords.length === 0" class="no-data-message">
@@ -372,12 +372,13 @@ const highlights = computed(() => {
 // --- Computed Properties for Date/Time ---
 const currentDate = computed(() => {
   const now = new Date();
-  return now.toLocaleDateString('es-ES', { 
+  const dateString = now.toLocaleDateString('es-ES', { 
     weekday: 'long',
     year: 'numeric', 
     month: 'long', 
     day: 'numeric' 
   });
+  return `Hoy ${dateString}`;
 });
 
 const currentTime = computed(() => {

@@ -10,6 +10,12 @@
 
     <div class="form-panel">
       <div class="form-container">
+        <!-- Branding móvil -->
+        <div class="mobile-branding">
+          <img src="/logo-jdashboard.png" alt="JDashboard Logo" class="mobile-logo" />
+          <h1 class="mobile-brand-title">JDashboard</h1>
+        </div>
+        
         <div class="form-header">
           <h2 class="form-title">Iniciar Sesión</h2>
           <p class="form-subtitle">Ingresa tus credenciales para acceder a tu panel.</p>
@@ -576,19 +582,42 @@ const handlePasswordRecovery = async () => {
   color: var(--color-text-primary);
 }
 
+/* --- Branding Móvil --- */
+.mobile-branding {
+  display: none;
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.mobile-logo {
+  width: 70px;
+  height: auto;
+  margin-bottom: 1rem;
+}
+
+.mobile-brand-title {
+  font-size: 2.2rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
 /* --- Diseño Responsivo --- */
 @media (max-width: 768px) {
   .login-page {
     flex-direction: column;
   }
   .branding-panel {
-    display: none; /* Ocultamos el panel de branding en móviles para centrarnos en el login */
+    display: none;
+  }
+  .mobile-branding {
+    display: block;
   }
   .form-panel {
     width: 100%;
-    height: 100%;
-    justify-content: flex-start;
-    padding-top: 4rem;
+    height: 100vh;
+    justify-content: center;
+    padding: 2rem 1rem;
   }
   
   .recovery-modal {

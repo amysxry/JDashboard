@@ -5,7 +5,7 @@
           <div class="date-info-main">
              <h1 class="page-title">Proyectos en Asana</h1>
           </div>
-          <p class="page-subtitle">Resumen de las actividades</p>
+          <p class="page-subtitle">Tareas de los últimos 30 días</p>
        </div>
        <div class="header-actions">
           <label for="showCompleted" class="filter-label">
@@ -78,8 +78,8 @@
                 </div>
                 <div v-else class="no-tasks">
                     <PartyPopper class="no-tasks-icon" />
-                    <span v-if="showCompletedTasks">¡Felicidades! No hay tareas en este proyecto.</span>
-                    <span v-else>¡Felicidades! No hay tareas pendientes.</span>
+                    <span v-if="showCompletedTasks">No hay tareas de los últimos 30 días en este proyecto.</span>
+                    <span v-else>No hay tareas pendientes de los últimos 30 días.</span>
                 </div>
               </div>
               <div class="card-footer">
@@ -92,7 +92,7 @@
         </div>
         <div v-else class="error-container">
             <h2>Sin actividad reciente.</h2>
-            <p>No se encontraron proyectos que contengan "Feed" o "Workflow" con tareas.</p>
+            <p>No se encontraron proyectos con tareas de los últimos 30 días.</p>
         </div>
     </main>
   </div>
@@ -135,12 +135,34 @@ const fetchData = async () => {
 
     const projectGids = projects.value.map(p => p.gid);
     if (projectGids.length > 0) {
+      // Calculate date 30 days ago
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      // Try to get all tasks first, then filter client-side for better compatibility
       const { data: tasksData, error: tasksError } = await supabase
-        .from('asana_tasks_cache').select('*').in('project_gid', projectGids);
+        .from('asana_tasks_cache')
+        .select('*')
+        .in('project_gid', projectGids);
+      
       if (tasksError) throw tasksError;
-      tasks.value = tasksData || [];
+      
+      // Apply client-side filtering for last 30 days using due_on field
+      const filteredTasks = (tasksData || []).filter(task => {
+        if (!task.due_on) return false; // Only show tasks with due dates
+        
+        const dueDate = new Date(task.due_on);
+        const today = new Date();
+        
+        // Show tasks that are due within the last 30 days or in the future
+        return dueDate >= thirtyDaysAgo;
+      });
+      
+      tasks.value = filteredTasks;
+      console.log(`📅 Total tareas: ${tasksData?.length || 0}, Filtradas (con due_on últimos 30 días): ${filteredTasks.length}`);
+      console.log('🔍 Fecha límite (due_on):', thirtyDaysAgo.toISOString().split('T')[0]);
 
-      const assigneeGids = [...new Set(tasksData?.map(t => t.assignee_gid).filter(Boolean))];
+      const assigneeGids = [...new Set(filteredTasks?.map(t => t.assignee_gid).filter(Boolean))];
       if (assigneeGids.length > 0) {
         const { data: usersData, error: usersError } = await supabase
           .from('asana_users_cache').select('gid, area').in('gid', assigneeGids);
@@ -155,7 +177,9 @@ const fetchData = async () => {
   }
 };
 
-const getAllTasksForProject = (projectGid: string) => tasks.value.filter(task => task.project_gid === projectGid);
+const getAllTasksForProject = (projectGid: string) => {
+    return tasks.value.filter(task => task.project_gid === projectGid);
+};
 const getVisibleTasksForProject = (projectGid: string) => {
     const allTasks = getAllTasksForProject(projectGid);
     if (showCompletedTasks.value) return allTasks;
@@ -175,6 +199,13 @@ const toggleTasks = (projectGid: string) => {
     }
 };
 const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+
+const isTaskRecent = (task: any) => {
+    // Since we're now filtering at database level, all tasks should be recent
+    // But keep this function for additional client-side validation if needed
+    return true;
+};
+
 const getUserArea = (assigneeGid: string) => {
     if (!assigneeGid) return null;
     const user = users.value.find(u => u.gid === assigneeGid);
