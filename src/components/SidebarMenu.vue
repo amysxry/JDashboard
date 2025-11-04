@@ -42,7 +42,7 @@
               <span v-show="!isCollapsed || isMobileView">Google Analytics</span>
             </RouterLink>
           </li>
-          <li>
+          <li v-if="shouldShowSeoRanking">
             <RouterLink to="/ranking-seo" @click="closeMobileMenu" class="nav-link" :class="{ active: currentRoute === '/ranking-seo' }">
               <Search class="icon" />
               <span v-show="!isCollapsed || isMobileView">Ranking SEO</span>
@@ -101,6 +101,8 @@ const isCollapsed = ref(false);
 const isMobileOpen = ref(false);
 const isMobileView = ref(window.innerWidth < 1024);
 const hasEcommerce = ref(false);
+const clientId = ref(null);
+const shouldShowSeoRanking = ref(true);
 
 const checkScreenSize = () => {
   isMobileView.value = window.innerWidth < 1024;
@@ -137,27 +139,34 @@ const fetchClientData = async () => {
         if (user) {
             const { data, error } = await supabase
                 .from('clientes')
-                .select('has_ecommerce')
+                .select('id, has_ecommerce')
                 .eq('auth_id', user.id)
                 .single();
 
             if (error) {
                 console.error("Error al obtener los datos del cliente:", error);
                 hasEcommerce.value = false;
+                shouldShowSeoRanking.value = true;
                 return;
             }
 
             if (data) {
+                clientId.value = data.id;
                 hasEcommerce.value = data.has_ecommerce || false;
+                // Ocultar ranking SEO para el cliente específico
+                shouldShowSeoRanking.value = data.id !== '43cc43d3-3136-46a6-9853-a5c392d7b7ab';
             } else {
                 hasEcommerce.value = false;
+                shouldShowSeoRanking.value = true;
             }
         } else {
             hasEcommerce.value = false;
+            shouldShowSeoRanking.value = true;
         }
     } catch (error) {
         console.error("Error en la autenticación o al buscar datos:", error.message);
         hasEcommerce.value = false;
+        shouldShowSeoRanking.value = true;
     }
 };
 

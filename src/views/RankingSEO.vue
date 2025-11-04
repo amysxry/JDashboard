@@ -280,6 +280,13 @@ const fetchSeoData = async () => {
 
 const loadSeoDataForClient = async (clienteId) => {
   try {
+    // Omitir ranking SEO para el cliente específico
+    if (clienteId === '43cc43d3-3136-46a6-9853-a5c392d7b7ab') {
+      console.log('SEO ranking omitido para este cliente');
+      seoKeywords.value = [];
+      return;
+    }
+    
     console.log('🔍 Cargando datos SEO para cliente:', clienteId);
     
     // MÉTODO 1: Intentar consulta directa

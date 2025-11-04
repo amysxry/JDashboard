@@ -23,7 +23,7 @@
       </header>
 
       <main class="content-grid">
-        <div class="left-column">
+        <div v-if="shouldShowSeo" class="left-column">
           <div class="content-card seo-card">
             <div class="card-header">
               <div class="seo-header-content">
@@ -148,14 +148,19 @@ import { ArrowUpIcon, ArrowDownIcon, TrendingUp, CalendarDays, Target, MousePoin
 // --- Estado de datos ---
 const isLoading = ref(true);
 const clientName = ref('');
+const clientId = ref(null);
 const seoKeywords = ref([]);
 const ga4Data = ref(null);
 const adsData = ref(null);
 const wordpressData = ref(null);
 
 // --- Propiedades Computadas ---
+const shouldShowSeo = computed(() => {
+  return clientId.value !== '43cc43d3-3136-46a6-9853-a5c392d7b7ab';
+});
+
 const keywordToWatch = computed(() => {
-  if (!seoKeywords.value || seoKeywords.value.length === 0) return null;
+  if (!shouldShowSeo.value || !seoKeywords.value || seoKeywords.value.length === 0) return null;
   return seoKeywords.value
     .filter(k => k.change > 0)
     .sort((a, b) => b.change - a.change)[0] || null;
@@ -459,6 +464,7 @@ const fetchDashboardData = async () => {
           
           // Usar este cliente temporalmente
           clientName.value = targetClient.empresa;
+          clientId.value = targetClient.id;
           await Promise.all([
             fetchSeoData(targetClient.id),
             fetchGA4Data(targetClient.id),
@@ -476,6 +482,7 @@ const fetchDashboardData = async () => {
 
     console.log('✅ Datos del cliente encontrados por auth_id:', clientData);
     clientName.value = clientData.empresa;
+    clientId.value = clientData.id;
 
     // Cargar datos reales de las tablas
     await Promise.all([
@@ -493,6 +500,13 @@ const fetchDashboardData = async () => {
 
 const fetchSeoData = async (clienteId) => {
   try {
+    // Omitir ranking SEO para el cliente específico
+    if (clienteId === '43cc43d3-3136-46a6-9853-a5c392d7b7ab') {
+      console.log('SEO ranking omitido para este cliente');
+      seoKeywords.value = [];
+      return;
+    }
+    
     console.log('🔍 Buscando datos SEO para cliente_id:', clienteId);
     
     // MÉTODO 1: Intentar consulta directa
@@ -1041,6 +1055,11 @@ onMounted(fetchDashboardData);
   position: relative;
   overflow-x: auto;
   min-width: 0; /* Prevent grid from creating overflow issues */
+}
+
+.content-grid:has(.left-column:only-child),
+.content-grid:has(.right-column:only-child) {
+  grid-template-columns: 1fr;
 }
 
 /* Responsive grid */
