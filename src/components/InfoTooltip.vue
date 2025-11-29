@@ -14,6 +14,7 @@
       v-if="showTooltip" 
       class="info-tooltip-content"
       :class="{ 'show': showTooltip }"
+      ref="tooltipRef"
     >
       {{ text }}
     </div>
@@ -21,7 +22,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { HelpCircle } from 'lucide-vue-next';
 
 defineProps({
@@ -32,6 +33,26 @@ defineProps({
 });
 
 const showTooltip = ref(false);
+const tooltipRef = ref(null);
+
+let mouseX = 0;
+let mouseY = 0;
+
+function updateTooltipPosition(e) {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+  if (tooltipRef.value) {
+    tooltipRef.value.style.left = mouseX + 'px';
+    tooltipRef.value.style.top = (mouseY - 16) + 'px';
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('mousemove', updateTooltipPosition);
+});
+onBeforeUnmount(() => {
+  document.removeEventListener('mousemove', updateTooltipPosition);
+});
 </script>
 
 <style scoped>
@@ -69,40 +90,36 @@ const showTooltip = ref(false);
   color: #7bb500;
 }
 
+
+
 .info-tooltip-content {
-  position: absolute;
-  bottom: 100%;
+  position: fixed;
   left: 50%;
-  transform: translateX(-50%) translateY(-8px);
+  top: 40px;
+  transform: translateX(-50%);
   background: linear-gradient(135deg, #2a2a2a 0%, #323232 100%);
   color: #ffffff;
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
   font-size: 0.875rem;
   font-weight: 500;
-  white-space: nowrap;
-  max-width: 200px;
   white-space: normal;
+  max-width: 260px;
   text-align: center;
   line-height: 1.4;
   box-shadow: 
     0 8px 16px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(146, 208, 0, 0.2);
-  z-index: 1000;
+  z-index: 99999;
   opacity: 0;
   animation: tooltipFadeIn 0.2s ease-out forwards;
   backdrop-filter: blur(10px);
+  pointer-events: none;
 }
 
+
 .info-tooltip-content::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 6px solid transparent;
-  border-top-color: #2a2a2a;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  display: none;
 }
 
 .info-tooltip-content.show {
@@ -112,11 +129,11 @@ const showTooltip = ref(false);
 @keyframes tooltipFadeIn {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(-4px);
+    transform: translateX(-50%) translateY(4px);
   }
   to {
     opacity: 1;
-    transform: translateX(-50%) translateY(-8px);
+    transform: translateX(-50%) translateY(8px);
   }
 }
 
